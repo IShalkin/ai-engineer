@@ -1,0 +1,4 @@
+interface:
+  display_name: "AI Engineer"
+  short_description: "Route and engineer production AI systems"
+  default_prompt: "Use $ai-engineer to explain, design, review, or implement this AI engineering task at the level of depth it requires."

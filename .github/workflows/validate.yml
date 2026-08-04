@@ -1,0 +1,23 @@
+name: Validate skill
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Compile validators
+        run: python -m py_compile skills/ai-engineer/scripts/*.py
+      - name: Validate current corrections
+        run: python skills/ai-engineer/scripts/validate_current_corrections.py
+      - name: Validate standalone package
+        run: python skills/ai-engineer/scripts/validate_public_skill.py

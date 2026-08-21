@@ -33,6 +33,8 @@ Evaluate domain fit, language, modality, dimensions, context limit, normalizatio
 
 Choose a store from required metadata filtering, hybrid lexical/vector search, index algorithms, update/delete behavior, scale, tenancy, backup, observability and team operations - not benchmark popularity.
 
+Where the corpus carries governed terms — states, categories, entity kinds the system acts on — keep that set closed at ingestion as well as at generation; see the closed-vocabulary rule in [context-prompt-engineering.md](context-prompt-engineering.md). A corpus that models also write into is where an invented synonym becomes the next retrieval's evidence.
+
 ## RAG-02 — Retrieval and Evidence Packet
 
 Apply the smallest technique that fixes a measured failure:
@@ -49,6 +51,10 @@ Apply the smallest technique that fixes a measured failure:
 10. auto-merging or iterative/agentic retrieval for complex evidence gathering.
 
 Tune candidate retrieval for recall, then reranking/filtering for precision. Return an evidence packet with query, filters, retriever/index versions, ranked stable IDs, excerpts, provenance, authorization result, and uncertainty. Track the exact packet passed to generation.
+
+Where the corpus carries authority — policies, decisions, standards, approved records — retrieval authorization is a function of lifecycle state and authorship, not of caller permission alone. An unadopted document is a different authority class, not a less relevant one; encode that in the index and the filter rather than in the ranker or the prompt, and state the matrix per status and per author class instead of letting one flag stand for all of them. `ENGINEERING_SYNTHESIS` A draft or proposal the system itself produced may be retrievable so it can see its own pending work, provided every excerpt carries its non-adopted status; a human's undecided proposal may be withheld entirely, because exposing it lets an agent act on a decision nobody made and quote it back to people as policy. Superseded and withdrawn states each need their own answer rather than inheriting the approved one.
+
+Failure signal: an answer citing a real document with correct provenance for a rule that was never adopted.
 
 For reciprocal-rank fusion, treat rank origin, fusion constant, weights, candidate depth, and score interpretation as backend-specific. Benchmark and pin them for each query class; do not transfer raw scores or a fixed `k` between engines.
 

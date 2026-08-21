@@ -6,6 +6,8 @@ Persist typed state at stable boundaries. Make side effects idempotent or attach
 
 Use durable storage for human interrupts and long-running work. Test crash after each side effect, resume, duplicate delivery, schema migration and disaster recovery.
 
+**Degradation must be observable when it happens, not inferable afterwards.** Four shapes hide it: a swallowed exception; a fallback that succeeds without signalling that it fired; a permissive parser dropping fields it does not recognise; and a component reporting degraded health without a reason. The middle two matter most with a model in the loop — a silent fallback means the agent reports success for a path that did not run, and a tool that quietly discards an unrecognised argument leaves the agent believing it passed a parameter that never arrived, so the next decision rests on an input the system never had. Permissive parsing of a contract is a silent failure, not tolerance. Where a swallow is genuinely correct, the annotation names the specific condition it is safe for; "non-critical" and "just in case" are not reasons. `ENGINEERING_SYNTHESIS`
+
 For LangGraph, distinguish thread-scoped checkpoint state from cross-thread Store/application memory. Specify retention, cleanup, thread identity, tenancy, schema migration, and deletion; verify behavior against the installed version and current persistence documentation rather than book examples.
 
 ## OPS-02 — Progressive Release
@@ -24,6 +26,8 @@ Trace:
 - evaluator scores, policy decisions and final product outcome.
 
 Follow current OpenTelemetry GenAI conventions where stable/applicable. Treat content, tool arguments and results as potentially sensitive; record hashes, classifications, IDs or sampled/redacted content when full payloads are not justified.
+
+For a multi-component system heading to production, wire metrics, tracing, log aggregation and queue/backlog monitoring into the platform layer rather than per component, so a new component becomes observable by joining it instead of through later instrumentation work. `ENGINEERING_SYNTHESIS` Observability added after an incident describes the next incident, not that one, and a component whose telemetry is optional is the one that will be dark when it matters. This is a platform-layer default, not a licence to build an observability stack around a single-process prototype or exploratory work, where structured logs and a trace of model calls are the proportional answer.
 
 ### SLO model
 

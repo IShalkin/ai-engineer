@@ -11,6 +11,21 @@ Load this module for explicit audits/readiness reviews, broad or high-stakes des
 5. Rank findings independently of the candidate's wording or self-rating. Assign the score only after findings.
 6. Re-run the matrix after changes and report remaining gaps.
 
+**Every element traces to a driver.** `REV-01` maps requirements to evidence; this is the other direction — each element the design actually contains (a component, a layer, a stage, a field, an agent) names the need that put it there. An element with no traceable driver is decoration, and decoration is where generated structure accumulates: a plausible-looking box, stage or role costs nothing to emit and is indistinguishable from a required one once it is in the diagram. Remove it or record the driver.
+
+**Four finding types, not one.** A review that only reports defects loses three kinds of evidence: `ENGINEERING_SYNTHESIS`
+
+- **derived fact** — corroborated across sources that are actually independent; two accounts sharing an origin, a model, or an upstream document are one source counted twice;
+- **confusion** — sources diverge from each other, and the divergence itself is the finding, not something to resolve by picking the more plausible one;
+- **silence** — knowledge that should exist and nobody can supply; the absence is the finding and is recorded as such;
+- **contradiction** — what people report conflicts with what the system records.
+
+The last three are only visible by comparing across sources, so a review that consults one kind of source can produce only defects and derived facts. Record which type each finding is; collapsing them into "issues" is how a confusion gets resolved by guesswork and a silence disappears.
+
+**Build independence, do not assume it.** Where a review must be independent, construct it: give the reviewer the artifact and its repository and withhold the author's working context, reasoning trace and conclusions. `ASM-01` audits independence as an assumption; this makes it a property of how the review was set up rather than a claim about it. `ENGINEERING_SYNTHESIS`
+
+**Discharge findings by name.** No dependent work proceeds until every blocking finding is folded into a revised artifact, and each revision states which finding it discharges. An unattributed edit made "while fixing review comments" is where new defects enter, because a change adopted next to a finding is easily mistaken for a change that answers it. A reviewer may be wrong: refute the finding with evidence recorded in the artifact, never by silently declining it.
+
 **Required output for a formal review/readiness decision:** requirements-to-evidence matrix, cross-domain gaps, severity, fix owner, and residual risk. For a design task, use the matrix internally and expose only the rows needed to support the requested decision unless the user asks for the full artifact.
 
 **Gate:** a `Critical` or `Major` gap forbids “ready”, “complete”, “excellent”, or a maximum score.
@@ -57,6 +72,26 @@ identify package/provider + installed/target version
 
 **Required output when SRC-01 is activated:** `source_auto_load_status`; when loaded, artifact identity plus claim ledger with label, claim, locator, confidence, and decision impact; when blocked, missing identity fields and no reconstructed claims. Do not emit this field for ordinary non-source-routed work.
 
+## Evidence Strength
+
+`SRC-01` classifies where a claim came from. This scale measures how hard it was checked. The two are orthogonal: a claim carries one label from each, and a strong provenance class does not supply verification strength. `ENGINEERING_SYNTHESIS`
+
+| Strength | Meaning |
+|---|---|
+| `none` | no evidence exists for the claim |
+| `asserted` | the actor states it; narrative only |
+| `recorded` | an artifact captured from a real execution, frozen at capture |
+| `re-derived` | an independent re-run reproduced the result |
+| `attested` | an evaluator distinct from the actor signed the re-derived result |
+
+Report a verification claim with its strength or not at all. An unlabelled claim reads as `asserted`, which is what it usually is: "the suite passed" in a summary is `asserted`, the captured output of that run is `recorded`, running it again independently is `re-derived`, and a reviewer who is not the author signing that re-run is `attested`. The distinction matters most where it is cheapest to skip — an agent reporting its own gates green is `asserted` no matter how confident the wording, and a reviewer who hands back a command to run rather than its output has produced `asserted` evidence about a `re-derived` claim.
+
+A claim that a control, gate, or guarantee *works* is not evidenced below `re-derived`; `asserted` for such a claim is a narrative, and `ASM-01` applies to it. `attested` requires the signer be someone other than the producer — the self-preference effect in [judge-bias-and-calibration.md](judge-bias-and-calibration.md) applies to a signature as much as to a score.
+
+Missing evidence is `none`, which is an honest unknown and must never be coerced to a pass or to a failure. Absence of a record is itself information: it says the check did not run, not that it ran and was clean.
+
+**Existence is not completion; behaviour is.** A claim that something is implemented cites the test or the live trace that proves the behaviour, never the file that contains the code. A route, a document, a config key or a screen existing is `asserted` evidence about its own existence and `none` about whether it works — and grading by artifact existence is how a control that enforces nothing passes review.
+
 ## ASM-01 — Guarantee and Assumption Audit
 
 For every claim equivalent to *guarantees*, *exactly once*, *fault tolerant*, *safe*, *independent*, or *complete*:
@@ -68,7 +103,7 @@ For every claim equivalent to *guarantees*, *exactly once*, *fault tolerant*, *s
 5. Replace the absolute with the strongest defensible conditional claim.
 6. Add tests or monitoring that expose assumption failure.
 
-**Required output:** guarantee-assumption table, violations, non-guarantees, test/monitor, and residual risk.
+**Required output:** guarantee-assumption table, violations, non-guarantees, test/monitor, and residual risk. When the claim reaches someone who will act on it, surface its confidence level and reachable basis alongside the claim itself — a correct internal ledger that the recipient never sees does not satisfy this gate.
 
 ## Mandatory Final Gate for Formal Reviews and Source/Guarantee Claims
 

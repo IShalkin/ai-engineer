@@ -12,7 +12,7 @@
 2. Put authority and non-negotiable constraints in the trusted instruction layer.
 3. Define inputs and outputs with explicit schemas and field semantics.
 4. Delimit untrusted evidence; say what it may inform and what it cannot override.
-5. Specify decision criteria, abstention/escalation, and forbidden effects.
+5. Specify decision criteria, abstention/escalation, and forbidden effects. Include the narrowed answer as an option between the two: where the evidence supports a smaller claim than the one asked for, returning that subset with its boundary stated beats both a confident overreach and a bare refusal.
 6. Add the minimum examples needed to resolve ambiguity; cover a boundary case.
 7. Version prompt, schema, model settings, and evaluator together.
 8. Test direct instructions, paraphrases, missing data, conflicts, adversarial data, and output consumption.
@@ -20,6 +20,10 @@
 **Gates:** schema-valid output; no instruction/data confusion; acceptance criteria measurable; caller handles refusal and malformed output.
 
 **Output:** prompt interface plus frozen prompt tests.
+
+Prompt storage can be its own boundary — fetched at runtime by identity and version — rather than an asset compiled into each caller, which makes the active version observable and a correction a single deployment instead of a fork per caller. `ENGINEERING_SYNTHESIS`
+
+It costs a runtime dependency in the request path with its own availability and latency budget, a component to operate, and a write path that now controls the trusted instruction layer of every caller. Reach for it when several independently deployed callers share a prompt, or when a prompt must be correctable without redeploying them; for a single application, versioning the prompt alongside the code that calls it is the smaller sufficient design. Where the boundary exists, the retrieved prompt is trusted-layer content: version it, control who may write it, and fail closed when the expected version is unavailable rather than falling back to an unpinned one.
 
 ## PRM-02 — Prompt Failure Diagnosis
 
@@ -45,6 +49,8 @@ Build in this order to support stable prefixes and clear authority:
 5. current request and output schema.
 
 Maintain a context manifest containing source, owner, trust, freshness, sensitivity, token cost, and purpose. Exclude content with no decision relevance.
+
+**Keep the vocabulary closed.** Where terms carry meaning the system acts on — states, roles, categories, verdicts, entity kinds — the set is governed and a term outside it may be proposed but not coined. A model asked for a value it cannot find will supply a fluent near-synonym, which reads as correct and matches nothing; downstream the synonym is retrieved as though it were governed, and by then the drift has a citation. This is sharper for systems where models both read and write the corpus, because each invented term becomes the next retrieval's evidence. Validate values against the closed set at the boundary and fail on an unknown rather than accepting it. `ENGINEERING_SYNTHESIS`
 
 ## PRM-03 — Reasoning and Decomposition Strategy
 
@@ -78,6 +84,8 @@ Do not hardcode a universal cache prefix, breakpoint count, minimum size, TTL, l
 ## CTX-03 — Progressive Discovery
 
 Maintain a compact registry: capability, trigger, exclusions, expected input/output, location, version, and cost. Route by the current cognitive function and risk; load details only after selection. Test both artifact correctness and activation: the system must retrieve and follow the right skill under realistic phrasing while avoiding false activation.
+
+Match declared needs to declared capabilities mechanically, not by having the model judge relevance from a name. A need with no matching capability is reported `unmet` and stops for a human; it is a question, not a gap to close by inference. Filling it from the nearest-sounding source is the failure this prevents, and it is invisible afterwards because the output looks complete. `ENGINEERING_SYNTHESIS`
 
 ## Failure Signals
 

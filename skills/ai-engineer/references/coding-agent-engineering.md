@@ -9,7 +9,7 @@
 **Steps:**
 
 1. Restate observable behavior, non-goals, and risk.
-2. Read repository instructions and inspect version-control state without discarding user work.
+2. Read repository instructions and inspect version-control state without discarding user work. For unfamiliar or legacy code, recover why current behavior exists before proposing a change to it, and read across three kinds of source rather than one: what the system records (history, incidents, traces, tests), what people report, and what the documentation or model claims. One source yields only defects; the divergences between the three are what expose a stale document, an undocumented workaround, or a rule everyone follows and nobody wrote down. Order the causes you find by when each was introduced — in brownfield work the sequence usually is the diagnosis.
 3. Search for the narrow implementation and test surface; read before editing.
 4. Form a falsifiable diagnosis or a small implementation plan.
 5. Apply the smallest coherent patch through a reviewable edit mechanism.
@@ -21,15 +21,13 @@
 
 ## COD-02 — Generated-Code Release Gate
 
-Require:
+Split the gate into two phases; both are required, and passing the first is not evidence for the second.
 
-- code compiles/lints/types as applicable;
-- focused behavior and regression tests pass;
-- security-sensitive flows receive adversarial tests;
-- migrations and dependency changes are intentional and reversible;
-- generated code has ownership and maintainability review;
-- runtime observability and failure behavior are defined;
-- deployment has canary/rollback when risk warrants it.
+**Phase 1 — mechanical:** code compiles/lints/types as applicable; focused behavior and regression tests pass; migrations and dependency changes are intentional and reversible.
+
+**Phase 2 — semantic:** duplicated business logic across modules; layering/dependency-direction violations reached through concrete imports rather than the declared interface; assertions or debug-only constructs left in a production path; unused dependencies; inconsistencies between a contract (schema, API, tool spec) and its implementation. A linter checks syntax, not these — they need a reader who holds the intended design.
+
+Additionally require: security-sensitive flows receive adversarial tests; generated code has ownership and maintainability review; runtime observability and failure behavior are defined; deployment has canary/rollback when risk warrants it.
 
 Tests prove only what they assert. Inspect the changed behavior and surrounding invariants rather than accepting a green suite as sufficient evidence.
 

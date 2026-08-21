@@ -32,6 +32,8 @@ Choose the smallest abstraction that keeps critical state, permissions and failu
 
 Record the scored matrix, dependency/version assumptions, operating owner, lock-in escape path, and a thin compatibility spike. A framework is selected only after the system shape is known.
 
+When a project produces reusable components for other projects to consume (a shared library, a plugin, a template), have each consumer declare the version it depends on rather than vendoring or embedding a copy. A declared dependency is one place to bump on update and one place to see what is actually in use; an embedded copy silently forks the moment either side changes.
+
 ## Migration Guardrails
 
 - In LangChain v1 code, evaluate `langchain.agents.create_agent` first and use official middleware for supported customization. Keep `langgraph.prebuilt.create_react_agent` only for a pinned legacy dependency and a tested migration boundary.

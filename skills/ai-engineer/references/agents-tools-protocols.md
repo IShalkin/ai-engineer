@@ -14,6 +14,10 @@
 
 Give every agent a narrow goal, typed input/output, explicit state, bounded tools, budgets, stop conditions, evaluator and accountable owner. Separate domain policy from framework callbacks so the design can survive library changes.
 
+Where several agents share a runtime, the shared plumbing — messaging, model invocation, prompt retrieval, tool access, registry enrolment, trace instrumentation — can sit behind one seam, so a new agent supplies goal, prompt contract and tool grant rather than a second copy of the infrastructure, and a cross-cutting control lands once instead of per agent. `ENGINEERING_SYNTHESIS`
+
+The seam costs coupling: every agent behind it inherits its release cadence, its failure modes and its blast radius. Justify it by the number of agents actually sharing the plumbing and by observed drift between them; two agents are a few duplicated lines, not an abstraction. Do not place agents behind one seam when their trust levels, tool grants or tenancy boundaries differ — a shared base class is then a path between authority domains the design states are separate.
+
 ## TOL-01 — Tool Contract
 
 Define for each tool:
@@ -28,6 +32,8 @@ Define for each tool:
 - dry-run/preview and human approval policy;
 - audit event and content-redaction rules.
 
+A tool that accepts an unrecognised argument and discards it, or falls back without signalling, leaves the caller reasoning from an input the system never received — see the silent-failure shapes in [production-operations.md](production-operations.md).
+
 Split consequential operations into propose/preview, authorize, execute, and independently verify phases. Return status, changed resources, evidence, partial-success state, and retryability. Never expose a broad shell, database or filesystem merely because a narrower tool is inconvenient.
 
 ## MEM-01 — State and Memory
@@ -39,6 +45,8 @@ Split consequential operations into propose/preview, authorize, execute, and ind
 | Episodic | Prior cases or outcomes | Retained with policy |
 | Semantic | Domain facts and documents | Versioned knowledge base |
 | Preference | User-approved durable settings | Until changed/deleted |
+
+**A fallback must never satisfy an identity check.** Where a store, workspace or index is per-tenant, resolve its identity from the caller and verify the resolved target matches before reading or writing. A defensive default that constructs a usable path or client on missing configuration will construct one that points somewhere — and a component that initialised without error is not a component that initialised correctly. Fail closed on mismatch: a hard error reaches an operator, whereas one tenant served another tenant's state does not. `ENGINEERING_SYNTHESIS`
 
 Store raw state rather than prompt-formatted prose. For every durable write classify owner, scope, sensitivity, expiry, confidence, source, version, and access policy; deduplicate or supersede old records and support correction/deletion. Use explicit retention tiers where scale warrants it: hot working state, warm session/project state, and cold durable knowledge/archive. Define promotion, consolidation, decay, eviction, and restore rules; “old” is not equivalent to “unimportant.” Retrieval from memory is a retrieval subsystem and must be evaluated for both relevance and authorization.
 

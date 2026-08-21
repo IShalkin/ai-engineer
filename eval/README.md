@@ -214,6 +214,10 @@ maintainer decisions.
 - Nothing measures *auto-activation*: every case invokes the skill explicitly, so the
   `description` field — the only thing that decides whether the skill fires at all in a real
   session — is untested by all three layers.
+- Architectural recommendations carried inside module bodies have no procedure ID, so no layer
+  reaches them: layer 2 scores routing sets and never reads the answer, and layer 3 scores against
+  a `Required output:` cell they do not appear in. An agent can route perfectly and still import a
+  pattern at the wrong scale. Draft cases and a proposed C5 criterion: [coverage-plan.md](coverage-plan.md).
 - The `command` provider passes no timeout, so a hung runner hangs the run. Whether a timeout
   belongs there, and what it would be, is a maintainer call.
 

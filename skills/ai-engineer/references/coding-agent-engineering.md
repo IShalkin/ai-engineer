@@ -9,13 +9,13 @@
 **Steps:**
 
 1. Restate observable behavior, non-goals, and risk.
-2. Read repository instructions and inspect version-control state without discarding user work. For unfamiliar or legacy code, recover why current behavior exists before proposing a change to it, and read across three kinds of source rather than one: what the system records (history, incidents, traces, tests), what people report, and what the documentation or model claims. One source yields only defects; the divergences between the three are what expose a stale document, an undocumented workaround, or a rule everyone follows and nobody wrote down. Order the causes you find by when each was introduced — in brownfield work the sequence usually is the diagnosis.
+2. Read repository instructions and inspect version-control state without discarding user work. For unfamiliar or legacy code, recover why current behavior exists before proposing a change to it, and read across three kinds of source rather than one: what the system records (history, incidents, traces, tests), what people report, and what the documentation or model claims. The divergences between the three are what expose a stale document, an undocumented workaround, or a rule everyone follows and nobody wrote down; for how to type what those divergences yield, see the finding types in [completeness-provenance.md](completeness-provenance.md). Order the causes you find by when each was introduced — in brownfield work the sequence usually is the diagnosis.
 3. Search for the narrow implementation and test surface; read before editing.
 4. Form a falsifiable diagnosis or a small implementation plan.
 5. Apply the smallest coherent patch through a reviewable edit mechanism.
 6. Run focused static checks/tests, then broader verification proportional to blast radius.
 7. Inspect the final diff for unrelated, generated, secret, dependency, or migration changes.
-8. Report files changed, evidence, residual risk, and rollback.
+8. Report files changed, evidence, residual risk, and rollback. Label each piece of evidence with its strength from the scale in [completeness-provenance.md](completeness-provenance.md); citing the file that contains the change is `asserted`, and a completion claim rests on the test or trace that exercised it.
 
 **Gates:** correct workspace; user changes preserved; behavior tested; no unexplained diff; external writes explicitly authorized.
 

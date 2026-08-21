@@ -26,7 +26,7 @@ python skills/ai-engineer/scripts/validate_public_skill.py
 python skills/ai-engineer/scripts/validate_current_corrections.py
 ```
 
-**Layer 1 is green.** Both scripts exit 0. The three findings the tightened checks surfaced on
+**Layer 1 was green on 2026-08-22.** Both scripts exit 0. The three findings the tightened checks surfaced on
 first run — `FIN-02` and `ART-01` `Required output` cells that stated nothing countable, and a
 `SEC-01` body under the statement bar — were fixed in the skill text, not exempted in the check.
 

@@ -14,18 +14,18 @@ Required output is routing shorthand; where the module body also states it, the 
 | ALG-01 | Decide whether AI/LLM is the right computational method | foundation-models-algorithms.md | 7 formalization items answered, non-LLM baseline, LLM justification |
 | ALG-02 | Select search/planning/CSP/probabilistic/ML/RL method | foundation-models-algorithms.md | method, matched assumptions, evaluation criteria, assumption test |
 | MLD-01 | Design or materially change a predictive/ML system | ml-system-design-lifecycle.md | document covering all 10 steps, 5 gates each passed |
-| MLD-02 | Review an ML/AI design artifact or production readiness | ml-system-design-lifecycle.md | stage, evidence map, 10 graded dimensions, ranked findings, fix plan |
-| REV-01 | Check full request and boundary coverage | completeness-provenance.md | every requirement cell covered/NA/unknown/missing, severity, owner, findings first |
+| MLD-02 | Review an ML/AI design artifact or production readiness | ml-system-design-lifecycle.md | stage, evidence map, 10 graded dimensions, at least one attack question answered per graded dimension, ranked findings, fix plan |
+| REV-01 | Check full request and boundary coverage | completeness-provenance.md | every requirement cell covered/NA/unknown/missing, severity, owner, findings first, each finding typed, each element traced to a driver |
 | SRC-01 | Use a named source/case, make material factual claims, or depend on current/provider-specific behavior, APIs, cache/context economics, pricing, standards, or security guidance | completeness-provenance.md | `source_auto_load_status`; if loaded, identity plus claim label, locator, impact |
-| ASM-01 | Claim a guarantee, independence, safety, or completeness | completeness-provenance.md | property, each assumption satisfied/violated/unknown, non-guarantees, monitor, residual risk |
+| ASM-01 | Claim a guarantee, independence, safety, or completeness | completeness-provenance.md | property, each assumption satisfied/violated/unknown, non-guarantees, monitor, residual risk, confidence and reachable basis surfaced to the recipient |
 | PRM-01 | Build a reliable prompt interface | context-prompt-engineering.md | typed schemas, authority layer, abstention rule, versioned bundle, frozen tests |
 | PRM-02 | Diagnose prompt failure | context-prompt-engineering.md | defect assigned to one of 6 categories, one layer changed, cases rerun |
 | PRM-03 | Select a reasoning/decomposition strategy | context-prompt-engineering.md | mechanism chosen, bounds on candidates/depth/calls, named external verifier |
 | CTX-01 | Assemble context for a model step | context-prompt-engineering.md | 5 layers in order, manifest rows for source, owner, trust, freshness, purpose |
 | CTX-02 | Context exceeds useful budget | context-prompt-engineering.md | every item P0-P3, handoff packet, preservation ledger, budget, recovery test |
 | CTX-03 | Many skills/tools/knowledge sources exist | context-prompt-engineering.md | registry rows per skill, activation and false-activation tests |
-| HRN-01 | Convert an agent prototype into a controlled runtime | agent-harness-loop.md | contract covering all 8 steps, 4 gates |
-| HRN-02 | Implement or review any loop/workflow that pauses, resumes, waits for approval, interrupts, cancels, or restarts | agent-harness-loop.md | states and transitions, all 6 terminal outcomes, loop escalation |
+| HRN-01 | Convert an agent prototype into a controlled runtime | agent-harness-loop.md | contract covering all 8 steps, 5 gates, all 5 control axes answered separately |
+| HRN-02 | Implement or review any loop/workflow that pauses, resumes, waits for approval, interrupts, cancels, or restarts | agent-harness-loop.md | states and transitions, all 8 terminal outcomes, a forward path per terminal state, loop escalation |
 | HRN-03 | Add multi-agent collaboration | agent-harness-loop.md | justification per agent, data plane, control plane, one-agent comparison |
 | DST-01 | Agents/workers vote, arbitrate, or may fail together | distributed-agent-systems.md | fault matrix, membership, decision rule, independence evidence, adversarial tests |
 | DST-02 | Durable causal state, replay, or selective invalidation is required | distributed-agent-systems.md | event schema, consistency boundary, checkpoint plan, invalidation rule, replay test |
@@ -34,7 +34,7 @@ Required output is routing shorthand; where the module body also states it, the 
 | TOL-02 | Use MCP or A2A | agents-tools-protocols.md | protocol justified, identity/authz/consent/tenancy, pinned definitions, effect audit |
 | MEM-01 | Store or retrieve durable memory | agents-tools-protocols.md | store per kind; per write owner, scope, sensitivity, expiry, version, access policy, deletion |
 | COD-01 | Agent changes a code repository | coding-agent-engineering.md | 8 steps executed, files/evidence/risk/rollback reported, 5 gates |
-| COD-02 | Approve or release generated code | coding-agent-engineering.md | each of 7 release requirements met, diff inspected |
+| COD-02 | Approve or release generated code | coding-agent-engineering.md | 3 mechanical checks, 5 semantic checks, 4 additional requirements, diff inspected |
 | RAG-01 | Ingest a knowledge corpus | data-rag-search.md | versioned identity, parser, chunking, metadata, embedding, index; replay |
 | RAG-02 | Retrieve evidence for an answer/action | data-rag-search.md | packet with query, filters, versions, ranked IDs, excerpts, provenance, authz |
 | RAG-03 | Choose hybrid, graph, multimodal, or agentic RAG | data-rag-search.md | measured failure justifying the layer, ontology/modality provenance |

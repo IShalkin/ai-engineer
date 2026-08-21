@@ -13,8 +13,9 @@ Load this module for explicit audits/readiness reviews, broad or high-stakes des
 
 **Every element traces to a driver.** `REV-01` maps requirements to evidence; this is the other direction — each element the design actually contains (a component, a layer, a stage, a field, an agent) names the need that put it there. An element with no traceable driver is decoration, and decoration is where generated structure accumulates: a plausible-looking box, stage or role costs nothing to emit and is indistinguishable from a required one once it is in the diagram. Remove it or record the driver.
 
-**Four finding types, not one.** A review that only reports defects loses three kinds of evidence: `ENGINEERING_SYNTHESIS`
+**Five finding types, not one.** A review that reports only defects loses four kinds of evidence: `ENGINEERING_SYNTHESIS`
 
+- **defect** — the artifact is wrong, unsafe, or does not do what it claims; the ordinary case, and still a type that must be recorded as one;
 - **derived fact** — corroborated across sources that are actually independent; two accounts sharing an origin, a model, or an upstream document are one source counted twice;
 - **confusion** — sources diverge from each other, and the divergence itself is the finding, not something to resolve by picking the more plausible one;
 - **silence** — knowledge that should exist and nobody can supply; the absence is the finding and is recorded as such;
@@ -80,15 +81,18 @@ identify package/provider + installed/target version
 |---|---|
 | `none` | no evidence exists for the claim |
 | `asserted` | the actor states it; narrative only |
+| `inspected` | anchored to a locator a reader can open and check — a quoted line, a named field, a diff hunk |
 | `recorded` | an artifact captured from a real execution, frozen at capture |
-| `re-derived` | an independent re-run reproduced the result |
+| `re-derived` | an independent re-run, or an independent reader, reproduced the result |
 | `attested` | an evaluator distinct from the actor signed the re-derived result |
+
+`inspected` and `recorded` are the same rung reached by different means, and which one applies depends on the claim, not on effort. A claim about static content — this file says X, this field is absent, this config is imported by nothing — is settled by inspection and cannot be executed; demanding a run for it is a category error. A claim about behaviour cannot be settled by inspection, however carefully the code is read.
 
 Report a verification claim with its strength or not at all. An unlabelled claim reads as `asserted`, which is what it usually is: "the suite passed" in a summary is `asserted`, the captured output of that run is `recorded`, running it again independently is `re-derived`, and a reviewer who is not the author signing that re-run is `attested`. The distinction matters most where it is cheapest to skip — an agent reporting its own gates green is `asserted` no matter how confident the wording, and a reviewer who hands back a command to run rather than its output has produced `asserted` evidence about a `re-derived` claim.
 
 A claim that a control, gate, or guarantee *works* is not evidenced below `re-derived`; `asserted` for such a claim is a narrative, and `ASM-01` applies to it. `attested` requires the signer be someone other than the producer — the self-preference effect in [judge-bias-and-calibration.md](judge-bias-and-calibration.md) applies to a signature as much as to a score.
 
-Missing evidence is `none`, which is an honest unknown and must never be coerced to a pass or to a failure. Absence of a record is itself information: it says the check did not run, not that it ran and was clean.
+Missing evidence is `none`, which is an honest unknown and must never be coerced to a pass or to a failure. Absence of a record is itself information: it says the check did not run, not that it ran and was clean. Distinguish the two objects that get confused here — an unevidenced report that a check ran is an `asserted` *claim* standing on `none` *evidence*, and it is the evidence rung that governs what may be concluded.
 
 **Existence is not completion; behaviour is.** A claim that something is implemented cites the test or the live trace that proves the behaviour, never the file that contains the code. A route, a document, a config key or a screen existing is `asserted` evidence about its own existence and `none` about whether it works — and grading by artifact existence is how a control that enforces nothing passes review.
 

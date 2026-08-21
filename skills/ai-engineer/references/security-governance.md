@@ -4,7 +4,7 @@
 
 Model actors, assets, trust boundaries, data flows, tools, identities, external effects and recovery. Include direct and indirect prompt injection, agent goal hijacking, tool misuse, identity/privilege abuse, supply-chain compromise, unexpected code execution, memory/context poisoning, data leakage, denial of service, insecure inter-agent communication, cross-session persistence through startup services, scheduled tasks, shell profiles or agent config files, human-agent trust exploitation where agent output is shaped to mislead the approving human, and unsafe autonomy.
 
-Name a control per abuse case, or record that the case is accepted and who accepted it; an abuse case with neither is an open finding, not a documented risk. Threat-model output is a versioned artifact reviewed when the actor set, the tool set or the autonomy level changes, not a one-time document.
+Name a control per abuse case, or record that the case is accepted and who accepted it; an abuse case with neither is an open finding, not a documented risk. Threat-model output is a versioned artifact reviewed when the actor set, the tool set, or any of the five control axes in [agent-harness-loop.md](agent-harness-loop.md) changes, not a one-time document. Keying the review to a single notion of "autonomy level" misses the case where approval authority is loosened and autonomy is not.
 
 ## SEC-02 — Authority and External-Effect Gate
 

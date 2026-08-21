@@ -268,6 +268,27 @@ def sha256_file(rel):
         raise HarnessError("cannot hash missing file: %s" % rel)
 
 
+def sha256_references():
+    """One digest over every runtime module, so a body-only edit moves the hash.
+
+    Hashing only SKILL.md and the index covered the router and not the content: module
+    bodies decide what `module_recall` scores and what the answer says, so two reports
+    could carry identical hashes, different numbers, and read as model variance. Names
+    are folded in alongside contents, otherwise a rename or a deletion is invisible.
+    """
+    root = os.path.join(REPO, "skills", "ai-engineer", "references")
+    try:
+        names = sorted(n for n in os.listdir(root) if n.endswith(".md"))
+    except FileNotFoundError:
+        raise HarnessError("cannot hash missing directory: references/")
+    rolling = hashlib.sha256()
+    for name in names:
+        rolling.update(name.encode("utf-8"))
+        with open(os.path.join(root, name), "rb") as fh:
+            rolling.update(hashlib.sha256(fh.read()).digest())
+    return {"files": len(names), "digest": rolling.hexdigest()}
+
+
 def provenance(args):
     return {
         "provider": args.provider,
@@ -277,6 +298,7 @@ def provenance(args):
         "n": args.n,
         "date": args.date,  # caller-supplied; the harness never reads a clock
         "sha256": {rel: sha256_file(rel) for rel in HASHED_FILES},
+        "references_sha256": sha256_references(),
     }
 
 

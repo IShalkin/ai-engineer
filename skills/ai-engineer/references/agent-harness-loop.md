@@ -17,7 +17,7 @@
 7. Trace versions, observations, decisions, tools, state changes, cost, latency, and evaluation.
 8. Assign a human/product owner and incident path.
 
-**Gates:** no hidden mutable state; no unbounded loop; every effect attributable and recoverable; outcome externally checkable; each of the five control axes below answered separately for the consequence class of the action, with a visible override/stop path — raised only through explicit authorization, never model preference.
+**Gates:** no hidden mutable state; no unbounded loop; every effect attributable and recoverable; outcome externally checkable; each of the five control axes below answered separately for the action's consequence class as classified in [security-governance.md](security-governance.md) SEC-02 — deterministic-only, advised, or approval-gated — with a visible override/stop path — raised only through explicit authorization, never model preference.
 
 ### The five control axes
 

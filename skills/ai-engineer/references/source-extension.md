@@ -1,6 +1,6 @@
 # COV-01 — Source-Pack Extension
 
-The public skill contains operational synthesis, not books or private book-derived source packs.
+This skill is operational synthesis, and that is its finished form - no source pack is missing from it. This procedure runs only when a caller wants an exact citation out of a specific artifact they supply.
 
 ## Add a source safely
 

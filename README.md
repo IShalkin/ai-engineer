@@ -151,7 +151,11 @@ Context7 is optional and accelerates discovery; it is not the final provenance b
 
 ## Public source boundary
 
-This repository contains synthesized engineering procedures. It does not contain copyrighted books, PDFs, or private book-derived source packs. Exact book reconstruction requires a separately supplied source artifact with an identity, hash, and chapter/page/section locator.
+This repository contains synthesized engineering procedures, and that is the whole package: nothing installs alongside it, and no source pack is pending. It carries no copyrighted books or PDFs, which costs exactly one thing - an exact citation with chapter, page, or section requires a source artifact you supply at the time, with an identity, hash, and locator. `COV-01` is the procedure for doing that.
+
+## What this package does not enforce
+
+Everything here is text a model reads, and text can be declined. Only two things are enforced mechanically: the tool grant (the reviewer agent has no write tools, so it cannot edit what it reviews) and the two validators below (structure, addressing, countability). In particular, the review-debt rule, the module budget, and the mode announcements are conventions the model follows, not gates that stop it — and the `verified <date>` markers in the corrections overlay are static text, checked for age but never re-verified against a source by any script here. Read a green validator run as "the package is structurally intact", never as "the advice is current".
 
 ## Validation
 

@@ -156,15 +156,35 @@ def validate_response(data, where):
 # the case (excluded from that metric's denominator).
 
 
+def label(value):
+    """Procedure IDs and mode names are compared as labels, not as literals.
+
+    A real run answers "Design" where the case says "design", and "ARC-01." with the
+    sentence punctuation attached. Comparing raw strings scores that as a routing
+    failure, which measures the reply's typography instead of its routing. Module
+    names are NOT passed through here: those are filenames, and a filename that does
+    not match exactly is a different file.
+    """
+    return str(value).strip().strip(".,;:").casefold()
+
+
 def score_once(case, resp):
-    expect_b = set(case.get("expect_boundary_ids") or [])
-    got_b = set(resp["boundary_ids"])
+    expect_b = {label(b) for b in (case.get("expect_boundary_ids") or [])}
+    got_b = {label(b) for b in resp["boundary_ids"]}
     modules = set(resp["modules"])
     expect_m = set(case.get("expect_modules") or [])
     forbid = set(case.get("forbid_modules") or [])
     negative = bool(case.get("negative"))
     return {
-        "primary_accuracy": resp["primary"] == case.get("expect_primary"),
+        # A negative case asserts that no module should open, not that no procedure ID may be
+        # named. Naming the ID a concept question is about, while loading nothing, is the
+        # behaviour the case wants; charging it primary_accuracy against an empty expectation
+        # measured tact, not routing. negative_violation is what scores these cases.
+        "primary_accuracy": (
+            None
+            if negative or not case.get("expect_primary")
+            else label(resp["primary"]) == label(case.get("expect_primary"))
+        ),
         # all-or-nothing: a partially fired boundary is an unfired boundary
         "boundary_recall": expect_b <= got_b if expect_b else None,
         "false_boundary_rate": bool(got_b - expect_b),
@@ -174,7 +194,7 @@ def score_once(case, resp):
         "over_loading_rate": len(modules) > max(MODULE_BUDGET, len(expect_m)),
         "forbidden_load_rate": bool(forbid & modules),
         "negative_violation": (len(modules) > 0) if negative else None,
-        "mode_accuracy": resp["mode"] == case.get("expect_mode"),
+        "mode_accuracy": label(resp["mode"]) == label(case.get("expect_mode")),
     }
 
 
@@ -501,21 +521,21 @@ def selftest():
     # 1. missing one expected boundary ID -> 0, not partial credit
     f = frac("st-boundary-partial", "boundary_recall", expect_boundary_ids=["b1", "b2"])
     assert f == 0.0, f
-    print("  ok  1/8  one of two expected boundaries fired -> boundary_recall 0.0 (no partial credit)")
+    print("  ok  1/10  one of two expected boundaries fired -> boundary_recall 0.0 (no partial credit)")
 
     # 2. unexpected boundary raises false_boundary_rate, recall stays 1.0
     kw = {"expect_boundary_ids": ["b1"]}
     r = frac("st-boundary-extra", "boundary_recall", **kw)
     fb = frac("st-boundary-extra", "false_boundary_rate", **kw)
     assert (r, fb) == (1.0, 1.0), (r, fb)
-    print("  ok  2/8  unexpected boundary -> false_boundary_rate 1.0, boundary_recall still 1.0")
+    print("  ok  2/10  unexpected boundary -> false_boundary_rate 1.0, boundary_recall still 1.0")
 
     # 3. negative case that loads a module is caught
     v = frac("st-negative-loads", "negative_violation", negative=True)
     assert v == 1.0, v
     clean = frac("st-clean", "negative_violation", negative=True)
     assert clean == 0.0, clean
-    print("  ok  3/8  negative case loading one module -> negative_violation 1.0 (clean case 0.0)")
+    print("  ok  3/10  negative case loading one module -> negative_violation 1.0 (clean case 0.0)")
 
     # 4. three of five repeats -> 0.6 and lands in UNSTABLE
     c = case("st-flaky")
@@ -526,7 +546,7 @@ def selftest():
     uns = unstable(pc)
     assert len(uns) == 1 and uns[0]["id"] == "st-flaky", uns
     assert abs(uns[0]["metrics"]["primary_accuracy"] - 0.6) < 1e-9
-    print("  ok  4/8  3 of 5 repeats pass -> pass fraction 0.6, case listed in UNSTABLE")
+    print("  ok  4/10  3 of 5 repeats pass -> pass fraction 0.6, case listed in UNSTABLE")
 
     # 5. malformed provider output is a harness error, not a scoring failure
     pc, errs = run([case("st-malformed"), case("st-missing-fixture")], provider, 1)
@@ -536,19 +556,19 @@ def selftest():
     assert "missing fixture" in errs[1]["error"], errs[1]
     agg = aggregate(pc)
     assert all(agg[m]["value"] is None for m in METRICS), agg
-    print("  ok  5/8  malformed stdout + missing fixture -> 2 harness errors, 0 scored cases")
+    print("  ok  5/10  malformed stdout + missing fixture -> 2 harness errors, 0 scored cases")
 
     # 6. loading nothing while naming the right IDs must not score a perfect card
     mr = frac("st-no-modules", "module_recall", expect_modules=[real])
     ok = frac("st-overload", "module_recall", expect_modules=[real])
     assert (mr, ok) == (0.0, 1.0), (mr, ok)
-    print("  ok  6/8  correct ids but no module loaded -> module_recall 0.0")
+    print("  ok  6/10  correct ids but no module loaded -> module_recall 0.0")
 
     # 7. a module name that is not a real file is unscoreable, not a clean answer
     pc, errs = run([case("st-unknown-module", forbid_modules=["context-prompt-engineering.md"])], provider, 1)
     assert pc == [] and len(errs) == 1, (pc, errs)
     assert "do not exist" in errs[0]["error"], errs[0]
-    print("  ok  7/8  module name that is not a real file -> harness error, not forbidden_load_rate 0.0")
+    print("  ok  7/10  module name that is not a real file -> harness error, not forbidden_load_rate 0.0")
 
     # 8. a case missing an expectation key is a harness error, not a silently unpassable case
     with tempfile.TemporaryDirectory() as td:
@@ -560,7 +580,36 @@ def selftest():
             raise AssertionError("missing expectation key was accepted")
         except HarnessError as exc:
             assert "expect_modules" in str(exc), exc
-    print("  ok  8/8  case line missing an expectation key -> harness error")
+    print("  ok  8/10  case line missing an expectation key -> harness error")
+
+    # 9. IDs and modes are labels: a real reply capitalises the mode and punctuates the ID
+    typo = score_once(
+        {"expect_primary": "ARC-01", "expect_mode": "design", "expect_boundary_ids": ["SRC-01"],
+         "expect_modules": [], "forbid_modules": [], "negative": False},
+        {"primary": "arc-01.", "mode": "Design", "boundary_ids": ["src-01"], "modules": []},
+    )
+    assert typo["primary_accuracy"] and typo["mode_accuracy"], typo
+    assert typo["boundary_recall"] and not typo["false_boundary_rate"], typo
+    # but a module filename is a filename: no normalisation, no near-miss credit
+    near = score_once(
+        {"expect_primary": "ARC-01", "expect_mode": "design", "expect_boundary_ids": [],
+         "expect_modules": ["architecture-decision-engine.md"], "forbid_modules": [],
+         "negative": False},
+        {"primary": "ARC-01", "mode": "design", "boundary_ids": [],
+         "modules": ["Architecture-Decision-Engine.md"]},
+    )
+    assert near["module_recall"] is False, near
+    print("  ok  9/10  ID/mode compared as labels; module filenames still compared exactly")
+
+    # 10. a negative case is scored on what it loads, not on whether it named an ID
+    neg = score_once(
+        {"expect_primary": "", "expect_mode": "explain", "expect_boundary_ids": [],
+         "expect_modules": [], "forbid_modules": [], "negative": True},
+        {"primary": "ALG-01", "mode": "explain", "boundary_ids": [], "modules": []},
+    )
+    assert neg["primary_accuracy"] is None, neg
+    assert neg["negative_violation"] is False and neg["mode_accuracy"], neg
+    print("  ok 10/10  negative case: primary_accuracy not applicable, negative_violation scores it")
 
     # --check-cases must reject the two defects that reached the shipped corpus once already
     with tempfile.TemporaryDirectory() as td:

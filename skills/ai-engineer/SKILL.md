@@ -1,6 +1,6 @@
 ---
 name: ai-engineer
-description: "Expert AI engineering workflow and knowledge router over synthesized engineering procedures; book-derived source packs install separately. Use to explain, design, implement, review, debug, evaluate, secure, deploy, or improve predictive ML systems, AI applications, prompts, context, RAG/search, coding or tool-using agents, MCP, agent platforms, multi-agent and distributed agent systems, and conventional AI algorithms. Selects compact task procedures, keeps complexity proportional to the request, and adds completeness, provenance, or assumption controls only when their boundaries apply."
+description: "Expert AI engineering workflow and knowledge router over engineering procedures synthesized from engineering literature and primary sources. Use to explain, design, implement, review, debug, evaluate, secure, deploy, or improve predictive ML systems, AI applications, prompts, context, RAG/search, coding or tool-using agents, MCP, agent platforms, multi-agent and distributed agent systems, and conventional AI algorithms. Selects compact task procedures, keeps complexity proportional to the request, and adds completeness, provenance, or assumption controls only when their boundaries apply."
 ---
 
 # AI Engineer
@@ -41,7 +41,7 @@ Preserve these compound boundaries: an automated decision that could produce an 
 
 A factor is *material* when omitting it would change the recommendation, the cost/latency envelope, or who is accountable for an effect.
 
-1. Read [procedure-index.md](references/procedure-index.md) before selecting a task module; use it as a routing index, not a user-facing artifact. For a question answerable from this file alone, answer without reading it.
+1. Read [procedure-index.md](references/procedure-index.md) before selecting a task module; use it as a routing index, not a user-facing artifact. For a question answerable from this file alone, answer without reading it. A `Required output` cell is a routing label, not the procedure: answering a task from the index row instead of opening the module it names is a routing failure, because the row states what to produce and the module states the controls that make it correct.
 2. Select one primary task module. Load at most two task modules initially; source skills named by the user are evidence lookups, not task modules.
 3. Load [architecture-decision-engine.md](references/architecture-decision-engine.md) for a new system, material redesign, or explicit topology decision.
 4. Expand after the initial route only for a material `missing`, `unknown`, safety/authority, operations, evaluation, named-source, version-sensitive, distributed-state, or guarantee boundary. The two-module discovery budget cannot suppress a material factor.
@@ -124,4 +124,4 @@ Apply provenance labels and detailed claim ledgers only to source-grounded, curr
 
 ## Source Boundary
 
-This public package contains the synthesized engineering procedures, not copyrighted books or private book-derived source packs. An exact `BOOK` claim requires a separately installed or supplied source artifact with identity, hash, and chapter/page/section locator; otherwise mark it `UNVERIFIED` or use engineering synthesis without attributing it to the book. Use [source-extension.md](references/source-extension.md) when adding source packs. Verify current APIs, protocols, security guidance, research claims, and package behavior from primary sources.
+This package is the synthesis itself, and nothing is missing from it: no source pack is expected, pending, or installed later. What that costs is one specific claim type - an exact `BOOK` citation with chapter, page, or section - which requires a source artifact the caller supplies at the time, with identity, hash, and locator. Without one, mark the claim `UNVERIFIED` or state it as engineering synthesis, and do not attribute it to a book. [source-extension.md](references/source-extension.md) is the procedure for that case, not a gap in this one. Verify current APIs, protocols, security guidance, research claims, and package behavior from primary sources.

@@ -41,7 +41,11 @@ REQUIRED = {
     "references/current-corrections-2026.md": [
         "langchain.agents.create_agent",
         "equal-compute or equal-thinking-token single-agent baseline",
-        "Faithfulness",
+        # Anchored to the rule, not to a heading or a provenance row. The previous needle
+        # was the capitalised "Faithfulness", which only ever matched the input-provenance
+        # table; deleting that table passed the marker straight through while the rule it
+        # was supposed to protect sat untouched two sections below.
+        "Define faithfulness as support by the supplied/retrieved context",
         "thread-scoped execution state",
         "There is no single sanitization gateway",
     ],

@@ -4,14 +4,9 @@ This operational overlay supersedes version-sensitive examples and defaults in t
 
 ## Update-input provenance
 
-The following secondary update inputs were reviewed on 2026-08-04. Their claims become runtime rules only after primary-source verification.
+Four secondary update inputs were reviewed on 2026-08-04 to produce the rules below: an updated LangGraph and context-engineering resource pack, a LangGraph architecture stress-test, a fact-check pass over multi-agent systems, memory, retrieval and security, and a note on Anthropic prompt caching, RRF indexing and a faithfulness gate.
 
-| Input | SHA-256 |
-|---|---|
-| LangGraph and Context Engineering 2026 — Updated Resource Pack | `70B934263380AED8775277647BB8B8FEA74B16AE23A7F2763120153B4BD81492` |
-| LangGraph Architecture Stress-Test 2026 | `E256E4CD96B891A38465E24E54A530D62714D4CB1E067170F54974397B59430A` |
-| Fact-Check and Update: MAS, Memory, Retrieval, Security | `D76DE837BC198A866049E4A8A791110B4404C84F723CA900E6B5B400FD7DAF15` |
-| Anthropic Prompt Caching, RRF Indexing and Faithfulness Gate | `E2A66D612E43E4553181E019E153CCFE83E51CC41B887EE4781726E952363BB6` |
+**None of those artifacts is in this repository, so nothing here can be checked against them.** This section previously carried their SHA-256 digests; a digest of a file the reader cannot obtain proves nothing and reads as auditability that does not exist, so the digests are gone. Treat every rule below as an engineering claim standing on the primary source it names, verified through `SRC-01` at the time of use — not as a claim inheriting authority from an unavailable input.
 
 ## Replacement rules
 

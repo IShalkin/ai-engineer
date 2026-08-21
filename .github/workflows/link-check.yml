@@ -1,0 +1,22 @@
+name: link-check
+
+# Deliberately NOT on push or pull_request. Citations rot on their own schedule, with no
+# relation to a commit, and running a network probe on every PR only teaches reviewers to
+# ignore a red mark they cannot fix. Weekly, plus on demand.
+on:
+  schedule:
+    - cron: "0 6 * * 1"
+  workflow_dispatch:
+
+jobs:
+  links:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Probe every link in references/
+        # The script always exits 0 on purpose; the report is for a human to read in the
+        # job log. Do not add `|| exit 1` here -- see the script's docstring.
+        run: python skills/ai-engineer/scripts/check_links.py

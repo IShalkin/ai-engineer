@@ -100,6 +100,69 @@ never chosen by the harness** — the harness cannot know what your runner calle
 number without those flags is a number you cannot attribute. `--date` is required for the
 same reason: no clock is read, so a report cannot self-stamp.
 
+### The shipped runner: `eval/providers/agent_provider.py`
+
+One runner honouring that contract ships. It starts a real Claude Code session with read-only
+tools, then reads `modules` **off the transcript's `Read`/`Grep`/`Glob` calls** rather than
+asking the model what it would have read. That distinction is the whole point of the runner:
+a single chat completion can only collect a declaration, which would turn `module_recall`
+into an eighth name-matching metric instead of evidence that procedure text entered the
+context. `primary`, `boundary_ids` and `mode` stay self-reported — no tool call reveals them.
+
+The package under test is loaded as a session-scoped plugin built from this repository, and
+user settings are switched off (`--setting-sources ""`), so the operator's installed hooks,
+memory files, and any same-named installed copy of the skill are outside the measurement.
+Nothing in the operator's own configuration is read or written.
+
+Everything machine-specific comes from the environment, so no account, model, or credential
+is committed here:
+
+| Variable | Meaning |
+|---|---|
+| `EVAL_MODEL` | required; no default, the runner refuses to guess |
+| `EVAL_EFFORT` | default `medium` |
+| `EVAL_CLAUDE_SETTINGS` | optional settings JSON holding whatever provider/credential env the CLI needs on this machine; keep it outside this repository |
+| `EVAL_TIMEOUT` | per-case seconds, default 600 |
+| `EVAL_KEEP_TRANSCRIPT` | directory for the raw `stream-json` of each run |
+
+Two things this runner does **not** measure. It invokes the skill explicitly, so
+*auto-activation* from the `description` alone is untested — a separate question needing its
+own cases. And it appends one instruction asking for the final JSON, so the reply format is
+prompted; the routing decisions inside it are not.
+
+### First live run (8 of 87 cases, n=1)
+
+Recorded so the numbers below are attributable and so nobody reads them as a release
+verdict. `us.anthropic.claude-sonnet-5`, effort `medium`, `-n 1`, `--date 2026-08-21`,
+8-case subset: `primary_accuracy` 0.75, `boundary_recall` 0.00 (1 case), `false_boundary_rate`
+0.25, `module_recall` 0.57 (7 cases), `over_loading_rate` 0.00, `forbidden_load_rate` 0.00,
+`negative_violation` 0.00, `mode_accuracy` 0.75. Zero harness errors, zero unstable cases —
+and with n=1 the UNSTABLE column cannot mean anything, which is why n=1 is a smoke test and
+not a measurement.
+
+What the failures actually were, read off the transcripts rather than inferred:
+
+- **A contradiction inside the package, now fixed.** A request to loosen an alerting cutoff
+  routed to `FRD-02` where the case expects `FIN-03`. The model was following the text: the
+  boundary sentence in `fraud-model-risk-guardrails.md` claimed threshold governance was
+  stated *in full* there, while `procedure-index.md` made `FIN-03` canonical for a threshold
+  change. Both boundary sentences now state the precedence — tuning during design is `FRD-02`,
+  changing a live value is `FIN-03`.
+- **Answering from the index row instead of the module.** Two cases produced a fluent, largely
+  correct answer having opened `procedure-index.md` only — one opened nothing at all. This is
+  the exact failure `module_recall` was added to catch, and it would have scored a clean card
+  on the other seven metrics. `SKILL.md` step 1 now says a `Required output` cell is a routing
+  label and not the procedure.
+- **A metric mis-scope, now fixed.** The negative case answered a concept question directly and
+  loaded nothing, which is precisely what it asks for, yet was charged `primary_accuracy` for
+  naming `ALG-01` against an empty expectation. `primary_accuracy` no longer applies to a
+  negative case; `negative_violation` is what scores it.
+- **Two boundary disagreements that are still open**, both listed under Outstanding: `SRC-01`
+  did not fire on a framework-choice request (version-sensitive by the router's own rule),
+  and an eval-set request fired `JDG-01/02/03` where the case expects none — while
+  `procedure-index.md` gives `JDG-04` the trigger "create an evaluation set". The case and the
+  index disagree; a precedence rule settles it, not a re-scored run.
+
 ### No judge in layer 2
 
 Every layer-2 metric is a set comparison against an authored expectation: zero variance,
@@ -142,6 +205,15 @@ maintainer decisions.
   penalise correct behaviour.
 - No precedence between `MEM-01` and `REG-04` for regulated data in agent memory, so no case
   covers that intersection.
+- `procedure-index.md` gives `JDG-04` the trigger "Create an evaluation set", so an eval-set
+  request arguably must fire a judge-calibration boundary — but `route-eva-01-1` and
+  `route-eva-01-2` expect none. The first live run fired `JDG-01/02/03` there. Either the
+  index trigger narrows to "state a numeric release threshold", or those two cases gain
+  `JDG-04`. Until one of them happens, `false_boundary_rate` on the EVA cases is measuring an
+  unsettled question rather than a defect.
+- Nothing measures *auto-activation*: every case invokes the skill explicitly, so the
+  `description` field — the only thing that decides whether the skill fires at all in a real
+  session — is untested by all three layers.
 - The `command` provider passes no timeout, so a hung runner hangs the run. Whether a timeout
   belongs there, and what it would be, is a maintainer call.
 

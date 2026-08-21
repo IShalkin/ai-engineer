@@ -249,8 +249,25 @@ def main():
         except OSError as exc:
             log("could not start the CLI: %s" % exc)
             return 1
-        except subprocess.TimeoutExpired:
-            log("case timed out")
+        except subprocess.TimeoutExpired as exc:
+            # Keep whatever the session produced before the clock ran out. A timeout with
+            # no transcript is unexplainable, and the interesting question -- what was it
+            # doing for ten minutes -- is answerable only from the partial stream.
+            partial = exc.stdout or b""
+            if isinstance(partial, bytes):
+                partial = partial.decode("utf-8", "replace")
+            keep_dir = os.environ.get("EVAL_KEEP_TRANSCRIPT")
+            if keep_dir and partial:
+                os.makedirs(keep_dir, exist_ok=True)
+                digest = hashlib.sha1(request.encode("utf-8")).hexdigest()[:12]
+                path = os.path.join(keep_dir, "%s.timeout.jsonl" % digest)
+                with open(path, "w", encoding="utf-8") as fh:
+                    fh.write(partial)
+                log("timed out after %ss; partial transcript: %s" % (
+                    os.environ.get("EVAL_TIMEOUT", "600"), path))
+            else:
+                log("timed out after %ss with no output captured"
+                    % os.environ.get("EVAL_TIMEOUT", "600"))
             return 1
         keep = os.environ.get("EVAL_KEEP_TRANSCRIPT")
         if keep:

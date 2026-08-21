@@ -101,16 +101,24 @@ def make_fixture_provider(fixtures_dir):
 def make_command_provider(argv):
     def provider(request, case_id, repeat):
         try:
-            out = subprocess.run(
+            done = subprocess.run(
                 argv, input=request, capture_output=True, text=True, encoding="utf-8"
-            ).stdout
+            )
         except OSError as exc:
             raise HarnessError("provider command failed to start: %s" % exc)
+        out = done.stdout
         try:
             data = json.loads(out)
         except json.JSONDecodeError as exc:
+            # stderr is not scored, but it is the only place a runner can say WHY it gave
+            # up. Without quoting it, five identical "stdout is not valid JSON" lines are
+            # all a report shows for a case that timed out, and the reason has to be
+            # rediscovered by hand.
+            why = (done.stderr or "").strip().splitlines()
+            tail = " | ".join(why[-3:])[:400] if why else "(runner said nothing on stderr)"
             raise HarnessError(
-                "provider stdout is not valid JSON for case %s: %s" % (case_id, exc)
+                "provider stdout is not valid JSON for case %s: %s; runner stderr: %s"
+                % (case_id, exc, tail)
             )
         return validate_response(data, "provider output for case %s" % case_id)
 
@@ -253,7 +261,11 @@ def run(cases, provider, n, jobs=1, result_log=None, resume=False):
     many jobs against a rate-limited endpoint turns into throttling that reads as model
     slowness, so this stays an explicit operator choice with a default of 1.
     """
-    previous = load_result_log(result_log) if resume else {}
+    recorded = load_result_log(result_log) if resume else {}
+    # A harness error is not a measurement, so resuming re-runs it. Skipping it would let
+    # a raised timeout or a fixed runner bug never get retried, and the report would keep
+    # excluding the same cases from every denominator while looking complete.
+    previous = {k: v for k, v in recorded.items() if v.get("error") is None}
     tasks = [
         (ci, case, r)
         for ci, case in enumerate(cases)

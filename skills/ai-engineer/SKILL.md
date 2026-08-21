@@ -1,6 +1,6 @@
 ---
 name: ai-engineer
-description: "Expert AI engineering workflow and knowledge router synthesized from a multi-source engineering corpus and current standards. Use to explain, design, implement, review, debug, evaluate, secure, deploy, or improve predictive ML systems, AI applications, prompts, context, RAG/search, coding or tool-using agents, MCP, agent platforms, multi-agent and distributed agent systems, multimodal agents, and conventional AI algorithms. Selects compact task procedures, keeps complexity proportional to the request, and adds completeness, provenance, or assumption controls only when their boundaries apply."
+description: "Expert AI engineering workflow and knowledge router synthesized from a multi-source engineering corpus and current standards. Use to explain, design, implement, review, debug, evaluate, secure, deploy, or improve predictive ML systems, AI applications, prompts, context, RAG/search, coding or tool-using agents, MCP, agent platforms, multi-agent and distributed agent systems, and conventional AI algorithms. Selects compact task procedures, keeps complexity proportional to the request, and adds completeness, provenance, or assumption controls only when their boundaries apply."
 ---
 
 # AI Engineer

@@ -2,6 +2,8 @@
 
 Find the earliest failing layer, capture evidence, change one cause, and turn the case into a regression. Do not tune generation while source, parsing, permission, state, or tool behavior remains unverified.
 
+Before changing any cause, build a deterministic check that fails on the reported symptom and run it at least once — a fix whose check never failed first is unfalsifiable. State three to five candidate causes with the observation each one predicts, then probe them one variable at a time. A symptom that cannot be reproduced is the first finding, not a licence to start editing.
+
 ## RAG Failure
 
 1. Confirm source exists and caller may access it.

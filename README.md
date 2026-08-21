@@ -14,13 +14,13 @@ The skill combines a proportional execution model with 75 stable engineering pro
 | `skills/ai-eval`, `skills/ai-agent-design`, `skills/ai-regulated` | three fork skills that run a narrow analysis in their own context and route into the same modules |
 | `agents/ai-engineer` | the producing agent — designs, implements, verifies |
 | `agents/ai-engineer-critic` | the adversarial reviewer — read-only, refutes, never fixes |
-| `hooks/guard-critic-readonly.py` | optional: enforces the critic's read-only boundary at execution time where hooks are permitted |
 
-**Hook-free by default.** Nothing in the package requires a hook, because some environments forbid them
-by policy. The critic is read-only through its `tools` allowlist rather than through a guard, which
-costs it mutation testing and gains an enforcement that holds everywhere. See
-[Hook-free profile](docs/usage.md#hook-free-profile) for what that trades away and how to restore the
-hook where it is allowed.
+**Hook-free.** Nothing in the package requires a hook, because some environments forbid them by policy.
+The critic is read-only because `Bash`, `Write` and `Edit` are absent from its tool grant — a tool never
+granted is a mechanism, while a filter over shell commands is best-effort. That costs the critic
+mutation testing and buys an enforcement that holds everywhere. See
+[Hook-free profile](docs/usage.md#hook-free-profile) for what is traded away and for the one residual
+gap the design does not close.
 
 ## Why use it
 
@@ -62,8 +62,18 @@ Clone the repository, then copy the parts your agent supports.
 
 ```bash
 git clone https://github.com/IShalkin/ai-engineer.git
+mkdir -p ~/.claude/skills ~/.claude/agents
 cp -R ai-engineer/skills/. ~/.claude/skills/
 cp ai-engineer/agents/*.md ~/.claude/agents/
+```
+
+On Windows PowerShell:
+
+```powershell
+git clone https://github.com/IShalkin/ai-engineer.git
+New-Item -ItemType Directory -Force "$HOME\.claude\skills", "$HOME\.claude\agents" | Out-Null
+Copy-Item -Recurse -Force .\ai-engineer\skills\* "$HOME\.claude\skills\"
+Copy-Item -Force .\ai-engineer\agents\*.md "$HOME\.claude\agents\"
 ```
 
 Copy all four skills, not only `ai-engineer`: the three fork skills link into
@@ -75,6 +85,7 @@ Codex supports the skill, not the agents:
 
 ```bash
 git clone https://github.com/IShalkin/ai-engineer.git
+mkdir -p ~/.codex/skills
 cp -R ai-engineer/skills/. ~/.codex/skills/
 ```
 
@@ -82,6 +93,7 @@ On Windows PowerShell:
 
 ```powershell
 git clone https://github.com/IShalkin/ai-engineer.git
+New-Item -ItemType Directory -Force "$HOME\.codex\skills" | Out-Null
 Copy-Item -Recurse -Force .\ai-engineer\skills\* "$HOME\.codex\skills\"
 ```
 

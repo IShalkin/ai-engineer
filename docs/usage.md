@@ -103,21 +103,25 @@ This package ships hook-free, because some environments forbid hooks by policy. 
 and agents rely on — `skills:` preloading, `context: fork` with `agent:`, `effort`, `memory: user`,
 `tools` — is frontmatter, not a hook, and ports unchanged. Two guarantees are weaker:
 
-| Mechanism | What a hook gave | Hook-free replacement | Guarantee lost |
-|---|---|---|---|
-| Enforced read-only critic | A `PreToolUse` guard read every Bash command and denied mutations (`>`, `tee`, `sed -i`, `cp`, `mv`, heredoc, `python -c "open(...,'w')"`, `perl -i`, `ln`, `Set-Content`, `git commit`), while permitting writes to a temp path outside the repo | `Bash` is removed from the critic's `tools`. The allowlist is a real mechanism, not an instruction | None on read-only — it is stronger. What is lost is capability: no mutation testing, no suite run. The critic hands the caller an exact command with CONFIRM/REFUTE criteria instead |
-| Review debt | A `PostToolUse`/`Stop` hook tracked control-touching edits and reminded you to call the critic | One rule in `SKILL.md`'s invariants and one in the `ai-engineer` agent body. The skill body is preloaded and survives the session | Real. Nothing enforces it; a model can decline. If your environment permits hooks, prefer the hook |
+| Mechanism | Hook-free replacement | What it gives, and what it does not |
+|---|---|---|
+| Read-only critic | `Bash`, `Write` and `Edit` are absent from the critic's `tools`. A tool the agent was never granted is a real mechanism, not an instruction | Holds without any hook installed. The cost is capability, not safety: the critic cannot mutation-test or run a suite, so it hands the caller an exact command with CONFIRM/REFUTE criteria instead. One residual gap is documented in the agent file itself — it holds `Skill`, and a skill may run under a wider grant |
+| Review debt | One rule in `SKILL.md`'s invariants and one in the `ai-engineer` agent body. The skill body is preloaded and survives the session | Weaker than a hook, honestly. Nothing enforces it and a model can decline. Where hooks are permitted, a `PostToolUse`/`Stop` hook that tracks control-touching edits is the stronger design |
 
-### Restoring the hooks where they are permitted
+`validate_public_skill.py` enforces the first row: the critic's `tools` must stay inside a read-only
+allowlist, and the build fails on `Bash`, `Write`, `Edit`, `MultiEdit` or `Task` appearing there.
 
-Give the critic `Bash` back and enforce read-only at execution time instead of withholding the tool.
-`agents/ai-engineer-critic.md` ends with the two frontmatter edits and the ready `PreToolUse` block;
-the guard itself is `hooks/guard-critic-readonly.py`. Both profiles live in one file on purpose, so
-the two variants cannot drift apart.
+### Why there is no command-filtering guard in this package
 
-`validate_public_skill.py` enforces the invariant either way: the critic may hold no `Bash`, or hold
-`Bash` together with the guard. `Bash` with neither fails the build, because read-only by instruction
-is not read-only.
+An earlier version shipped a `PreToolUse` hook that read each Bash command and denied the mutating ones,
+so the critic could keep a shell. It was measured and deleted. It passed `curl -o file`, `wget -O file`,
+`tar -xzf -C dir`, `unzip -o` and `git config`, and falsely refused a legitimate write to a temp path.
+A filter over a surface as large as a shell is best-effort, and a best-effort control documented as a
+boundary is precisely the defect this critic is built to find in other people's systems.
+
+If you want the critic to have a shell, buy it with isolation instead: run the review against a
+throwaway copy, a container, or a git worktree it may wreck, and keep the reviewed artifact out of
+reach. A shell is then safe because nothing valuable is in range.
 
 ## Add organizational constraints
 

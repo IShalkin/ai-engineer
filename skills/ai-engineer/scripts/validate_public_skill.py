@@ -11,6 +11,36 @@ SKILLS = SKILL.parent
 REPO = SKILLS.parent
 
 
+def _frontmatter_tools(text: str) -> "set[str] | None":
+    """Tool names granted by an agent file, in either YAML spelling.
+
+    Both `tools: Read, Grep` and a block sequence of `- Read` lines are legal, and a
+    substring test over the single `tools:` line reads the block form as granting nothing --
+    which passed an agent holding Bash. Hand-parsed rather than via PyYAML so the validator
+    keeps working with a bare standard library, in CI and on an offline machine alike.
+    """
+    if not text.startswith("---"):
+        return None
+    end = text.find("\n---", 3)
+    front = text[3:end] if end != -1 else text[3:]
+
+    lines = front.splitlines()
+    for index, line in enumerate(lines):
+        if not line.startswith("tools:"):
+            continue
+        inline = line.split(":", 1)[1].strip().strip("[]")
+        names = {n.strip() for n in inline.split(",") if n.strip()}
+        for following in lines[index + 1:]:
+            stripped = following.strip()
+            if stripped.startswith("- "):
+                names.add(stripped[2:].strip())
+                continue
+            if stripped and not following.startswith((" ", "\t")):
+                break
+        return {n for n in names if n and n not in ("[", "]")}
+    return None
+
+
 def main() -> int:
     errors: list[str] = []
     skill_text = (SKILL / "SKILL.md").read_text(encoding="utf-8")
@@ -18,14 +48,41 @@ def main() -> int:
     if "name: ai-engineer" not in skill_text:
         errors.append("SKILL.md must declare name: ai-engineer")
 
-    forbidden = ("C:" + "\\Users\\", "gh" + "p_", "CONTEXT7" + "_API_KEY=")
+    # One spelling of a machine home directory is not a leak check: different tools write
+    # the drive-letter form with either separator and either case, and the forward-slash
+    # spelling is the one that survives being pasted into YAML. Matched case-insensitively
+    # on both separators, plus the token prefixes worth refusing outright. Deliberately no
+    # example path in this comment -- the scan reads this file too.
+    forbidden = (
+        re.compile(r"[a-z]:[\\/]users[\\/]", re.I),
+        re.compile(r"[\\/]home[\\/](?!user\b|USER\b)[a-z0-9._-]+[\\/]", re.I),
+        re.compile("gh" + "[pousr]_[A-Za-z0-9]{16}"),
+        re.compile("sk-ant-" + "[A-Za-z0-9_-]{8}"),
+        re.compile(r"\bAKIA[0-9A-Z]{12}"),
+        re.compile("CONTEXT7" + "_API_KEY="),
+    )
     for path in REPO.rglob("*"):
         if not path.is_file() or ".git" in path.parts or "__pycache__" in path.parts:
             continue
         text = path.read_text(encoding="utf-8", errors="ignore")
         for marker in forbidden:
-            if marker in text:
-                errors.append(f"{path.relative_to(REPO)} contains forbidden marker {marker!r}")
+            hit = marker.search(text)
+            if hit:
+                errors.append(
+                    f"{path.relative_to(REPO)} contains a forbidden marker matching "
+                    f"{marker.pattern!r}"
+                )
+
+    # The class behind a defect that shipped: three modules told the agent to load
+    # book-derived sibling skills this package does not contain, so the agent found
+    # nothing and synthesized instead of reporting blocked_missing_source. Absent
+    # artifacts are invisible to a link check, because they were never links.
+    for path in SKILL.rglob("*.md"):
+        if "sibling skill" in path.read_text(encoding="utf-8"):
+            errors.append(
+                f"{path.relative_to(REPO)} instructs loading a sibling skill this package "
+                "does not ship; route through source-extension.md (COV-01) instead"
+            )
 
     # A relative link may point up out of its own skill -- the fork skills (ai-eval,
     # ai-agent-design, ai-regulated) are bodies of `../ai-engineer/references/*` links by
@@ -67,21 +124,22 @@ def main() -> int:
         if not path.is_file():
             errors.append(f"missing public documentation: {path.relative_to(REPO)}")
 
-    # The critic's read-only guarantee has exactly two valid shapes: no Bash at all
-    # (hook-free profile), or Bash plus the PreToolUse guard. Bash without the guard is
-    # read-only by instruction only, and that is the shape this check exists to forbid.
+    # The critic is read-only because of what it was never granted. Asserted as a class:
+    # its tools must be a SUBSET of a read-only allowlist. A denylist of two names passed a
+    # critic holding Bash, MultiEdit or Task, which is the "assert the instance" defect the
+    # package tells other people not to ship.
+    CRITIC_ALLOWED = {"Read", "Grep", "Glob", "Skill", "ToolSearch", "WebFetch"}
     critic = REPO / "agents" / "ai-engineer-critic.md"
     if critic.is_file():
-        parts = critic.read_text(encoding="utf-8").split("---", 2)
-        front = parts[1] if len(parts) > 2 else ""
-        tools = next((l for l in front.splitlines() if l.startswith("tools:")), "")
-        if "Bash" in tools and "hooks:" not in front:
-            errors.append(
-                "ai-engineer-critic has Bash without the PreToolUse read-only guard"
-            )
-        for banned in ("Write", "Edit"):
-            if banned in tools:
-                errors.append(f"ai-engineer-critic must not have {banned} in tools")
+        granted = _frontmatter_tools(critic.read_text(encoding="utf-8"))
+        if granted is None:
+            errors.append("ai-engineer-critic declares no tools: field")
+        else:
+            for tool in sorted(granted - CRITIC_ALLOWED):
+                errors.append(
+                    f"ai-engineer-critic must not be granted {tool}: the read-only "
+                    f"allowlist is {sorted(CRITIC_ALLOWED)}"
+                )
 
     if errors:
         print("PUBLIC_SKILL: FAIL")

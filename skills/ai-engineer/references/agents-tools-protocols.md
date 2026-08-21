@@ -19,7 +19,7 @@ Give every agent a narrow goal, typed input/output, explicit state, bounded tool
 Define for each tool:
 
 - semantic name and one responsibility;
-- typed arguments/results and validation;
+- typed arguments/results and validation, with every argument treated as attacker-influenced and checked again at each sink it reaches — shell, dynamic import or eval, SQL, filesystem path, outbound URL, deserializer — because a schema type is not a taint check;
 - read versus write behavior;
 - identity, authorization and resource scope;
 - timeout, rate limit and cost;

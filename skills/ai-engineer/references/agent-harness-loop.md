@@ -42,4 +42,4 @@ Autonomy for known deterministic steps, state only in chat, retry without classi
 
 ## Source Depth
 
-Use sibling skills `li-ai-agents-in-depth`, `huang-designing-ai-agents`, `lanham-ai-agents-action-2e`, `albada-multiagent-systems`, `gfeller-crewai-mcp`, `koenigstein-ai-agents`, and `omahony-nonnenmacher-agent-platforms` for variants and examples.
+Deeper harness variants and worked examples live in book-derived source packs this package does not ship. Route a request for them through [source-extension.md](source-extension.md) (COV-01); if no pack is installed, report `blocked_missing_source` rather than substituting synthesis for a source.

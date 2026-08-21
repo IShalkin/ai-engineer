@@ -40,4 +40,4 @@ Using an agent for a fixed algorithm, optimizing an undefined objective, no base
 
 ## Source Depth
 
-Use sibling skill `russell-norvig-modern-ai` for the full algorithmic map and the task-specific source skills for current agent/RAG implementations.
+The full algorithmic map and per-task implementation detail live in source packs this package does not ship. Route through [source-extension.md](source-extension.md) (COV-01) and report `blocked_missing_source` if none is installed.

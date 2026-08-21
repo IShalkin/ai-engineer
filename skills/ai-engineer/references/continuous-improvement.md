@@ -38,4 +38,4 @@ Live self-modification, self-approved data, visible release tests, changing seve
 
 ## Source Depth
 
-Use sibling skills `li-ai-agents-in-depth`, `lanham-ai-agents-action-2e`, `huang-designing-ai-agents`, and `omahony-nonnenmacher-agent-platforms`.
+Deeper variants live in book-derived source packs this package does not ship. Route through [source-extension.md](source-extension.md) (COV-01) and report `blocked_missing_source` if none is installed.

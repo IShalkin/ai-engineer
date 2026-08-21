@@ -51,6 +51,9 @@ instead. Concurrent agents editing one file is how a green suite hides a lost ch
   should pass.
 - **Review debt is yours to discharge.** If your change touched a control, a gate, a filter or a
   number someone will quote, call `ai-engineer-critic` on it before you report the work complete.
+  This is not self-verification: the critic is a separate agent with a fresh context and no write
+  tools, so it can contradict you. Re-reading your own work in your own context cannot, which is
+  why doing that instead does not clear the debt.
 
 ## Environment
 

@@ -10,7 +10,7 @@ The skill combines a proportional execution model with 75 stable engineering pro
 
 | Part | Contents |
 |---|---|
-| `skills/ai-engineer` | the router: `SKILL.md` plus 28 `references/*.md` modules and 2 validators |
+| `skills/ai-engineer` | the router: `SKILL.md` plus the `references/*.md` modules and 2 validators |
 | `skills/ai-eval`, `skills/ai-agent-design`, `skills/ai-regulated` | three fork skills that run a narrow analysis in their own context and route into the same modules |
 | `agents/ai-engineer` | the producing agent — designs, implements, verifies |
 | `agents/ai-engineer-critic` | the adversarial reviewer — read-only, refutes, never fixes |

@@ -93,7 +93,7 @@ into `../ai-engineer/references/`. Install all four together or the links break.
 
 Both preload `SKILL.md` through their `skills:` frontmatter field. That is the mechanism that matters:
 an instruction in an agent body telling it to invoke a skill is a request the model can silently
-decline, and did. Only `SKILL.md` is preloaded; the 28 modules stay on demand, which is the point.
+decline, and did. Only `SKILL.md` is preloaded; the modules stay on demand, which is the point.
 
 Install them into the agents directory your harness reads (`~/.claude/agents/` for Claude Code).
 

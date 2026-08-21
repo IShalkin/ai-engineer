@@ -16,7 +16,7 @@ jobs:
         with:
           python-version: "3.12"
       - name: Compile validators
-        run: python -m py_compile skills/ai-engineer/scripts/*.py
+        run: python -m py_compile skills/ai-engineer/scripts/*.py hooks/*.py
       - name: Validate current corrections
         run: python skills/ai-engineer/scripts/validate_current_corrections.py
       - name: Validate standalone package

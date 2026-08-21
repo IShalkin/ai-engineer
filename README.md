@@ -4,7 +4,23 @@
 
 `ai-engineer` is a production-oriented skill for Claude Code, Codex, and other agents that support `SKILL.md`. It helps an agent explain, design, review, implement, debug, evaluate, secure, and operate AI/ML systems without turning every request into a heavyweight architecture exercise.
 
-The skill combines a proportional execution model with 52 stable engineering procedures covering predictive ML, RAG and search, context engineering, tool-using agents, multi-agent systems, security, evaluation, and production operations.
+The skill combines a proportional execution model with 75 stable engineering procedures covering predictive ML, RAG and search, context engineering, tool-using agents, multi-agent systems, security, evaluation, judge calibration, regulated domains, financial-crime and fraud model risk, managed agent runtimes, and production operations.
+
+## What is in the package
+
+| Part | Contents |
+|---|---|
+| `skills/ai-engineer` | the router: `SKILL.md` plus 28 `references/*.md` modules and 2 validators |
+| `skills/ai-eval`, `skills/ai-agent-design`, `skills/ai-regulated` | three fork skills that run a narrow analysis in their own context and route into the same modules |
+| `agents/ai-engineer` | the producing agent — designs, implements, verifies |
+| `agents/ai-engineer-critic` | the adversarial reviewer — read-only, refutes, never fixes |
+| `hooks/guard-critic-readonly.py` | optional: enforces the critic's read-only boundary at execution time where hooks are permitted |
+
+**Hook-free by default.** Nothing in the package requires a hook, because some environments forbid them
+by policy. The critic is read-only through its `tools` allowlist rather than through a guard, which
+costs it mutation testing and gains an enforcement that holds everywhere. See
+[Hook-free profile](docs/usage.md#hook-free-profile) for what that trades away and how to restore the
+hook where it is allowed.
 
 ## Why use it
 
@@ -40,27 +56,33 @@ Evaluation is not launched merely because evaluation is discussed. The skill run
 
 ## Installation
 
-Clone the repository, then copy `skills/ai-engineer` into the skills directory used by your agent.
+Clone the repository, then copy the parts your agent supports.
 
 ### Claude Code
 
 ```bash
 git clone https://github.com/IShalkin/ai-engineer.git
-cp -R ai-engineer/skills/ai-engineer ~/.claude/skills/ai-engineer
+cp -R ai-engineer/skills/. ~/.claude/skills/
+cp ai-engineer/agents/*.md ~/.claude/agents/
 ```
+
+Copy all four skills, not only `ai-engineer`: the three fork skills link into
+`../ai-engineer/references/` and need it as a sibling directory.
 
 ### Codex
 
+Codex supports the skill, not the agents:
+
 ```bash
 git clone https://github.com/IShalkin/ai-engineer.git
-cp -R ai-engineer/skills/ai-engineer ~/.codex/skills/ai-engineer
+cp -R ai-engineer/skills/. ~/.codex/skills/
 ```
 
 On Windows PowerShell:
 
 ```powershell
 git clone https://github.com/IShalkin/ai-engineer.git
-Copy-Item -Recurse -Force .\ai-engineer\skills\ai-engineer "$HOME\.codex\skills\ai-engineer"
+Copy-Item -Recurse -Force .\ai-engineer\skills\* "$HOME\.codex\skills\"
 ```
 
 Restart the agent after installation if it does not refresh skills automatically.

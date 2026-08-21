@@ -70,6 +70,55 @@ Check the lockfile, optionally use Context7 for discovery, verify the official m
 and report whether the skill's canonical documentation link changed.
 ```
 
+## The fork skills
+
+Three narrower skills route into the same modules and run in their own context, so a deep analysis
+does not crowd the calling conversation. Each is a routing body, not a second copy of the knowledge:
+
+| Skill | Use it for | Loads |
+|---|---|---|
+| `ai-eval` | metrics, graders, LLM judges, eval-set design, thresholds, release gates, required n | `evaluation-testing.md`, `judge-bias-and-calibration.md` |
+| `ai-agent-design` | graph/topology, node boundaries, tool specs, memory, HITL pauses, resume, cancellation, loop termination | `agent-harness-loop.md`, `agents-tools-protocols.md`, `architecture-decision-engine.md` |
+| `ai-regulated` | regulated regimes, audit trails, validation evidence, official records, accountable approval, kill switches | `regulated-domain-controls.md`, `completeness-provenance.md` |
+
+They rely on `skills/ai-engineer` being installed as a sibling directory, because their bodies link
+into `../ai-engineer/references/`. Install all four together or the links break.
+
+## The two agents
+
+| Agent | Role | Tools |
+|---|---|---|
+| `ai-engineer` | produces work: designs, implements, verifies | read, write, edit, shell |
+| `ai-engineer-critic` | refutes work already produced, reports findings, never fixes | read-only |
+
+Both preload `SKILL.md` through their `skills:` frontmatter field. That is the mechanism that matters:
+an instruction in an agent body telling it to invoke a skill is a request the model can silently
+decline, and did. Only `SKILL.md` is preloaded; the 28 modules stay on demand, which is the point.
+
+Install them into the agents directory your harness reads (`~/.claude/agents/` for Claude Code).
+
+## Hook-free profile
+
+This package ships hook-free, because some environments forbid hooks by policy. Everything the skills
+and agents rely on — `skills:` preloading, `context: fork` with `agent:`, `effort`, `memory: user`,
+`tools` — is frontmatter, not a hook, and ports unchanged. Two guarantees are weaker:
+
+| Mechanism | What a hook gave | Hook-free replacement | Guarantee lost |
+|---|---|---|---|
+| Enforced read-only critic | A `PreToolUse` guard read every Bash command and denied mutations (`>`, `tee`, `sed -i`, `cp`, `mv`, heredoc, `python -c "open(...,'w')"`, `perl -i`, `ln`, `Set-Content`, `git commit`), while permitting writes to a temp path outside the repo | `Bash` is removed from the critic's `tools`. The allowlist is a real mechanism, not an instruction | None on read-only — it is stronger. What is lost is capability: no mutation testing, no suite run. The critic hands the caller an exact command with CONFIRM/REFUTE criteria instead |
+| Review debt | A `PostToolUse`/`Stop` hook tracked control-touching edits and reminded you to call the critic | One rule in `SKILL.md`'s invariants and one in the `ai-engineer` agent body. The skill body is preloaded and survives the session | Real. Nothing enforces it; a model can decline. If your environment permits hooks, prefer the hook |
+
+### Restoring the hooks where they are permitted
+
+Give the critic `Bash` back and enforce read-only at execution time instead of withholding the tool.
+`agents/ai-engineer-critic.md` ends with the two frontmatter edits and the ready `PreToolUse` block;
+the guard itself is `hooks/guard-critic-readonly.py`. Both profiles live in one file on purpose, so
+the two variants cannot drift apart.
+
+`validate_public_skill.py` enforces the invariant either way: the critic may hold no `Bash`, or hold
+`Bash` together with the guard. `Bash` with neither fails the build, because read-only by instruction
+is not read-only.
+
 ## Add organizational constraints
 
 Place organization-specific policies in a separate skill or source pack. Route them by name and keep their ownership, sensitivity, version, and provenance explicit. Do not paste every policy into the global `SKILL.md`.

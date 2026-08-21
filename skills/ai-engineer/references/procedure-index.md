@@ -44,13 +44,36 @@ Use these stable IDs in plans, implementation notes, evaluations, and incident r
 | EVA-01 | Create an evaluation set | evaluation-testing.md | versioned cases and failure taxonomy |
 | EVA-02 | Evaluate an agent trajectory | evaluation-testing.md | outcome/process/quality scores with evidence |
 | EVA-03 | Use an LLM judge or issue a scored completeness/readiness verdict | evaluation-testing.md | findings-first evaluation record, independent scores, verdict, and provenance-labelled additions |
+| JDG-01 | A judge score gates a release, ranks two systems, or is reported as quality evidence | judge-bias-and-calibration.md | judge card with model/prompt versions, order-swap policy, repeat count, agreement statistic, unmitigated biases |
+| JDG-02 | Author or edit the rubric criteria text a judge scores against | judge-bias-and-calibration.md | versioned rubric of affirmative predicates with count formulae, no-deduction clauses, and scale anchors |
+| JDG-03 | Before any judge output is trusted, and after every rubric or judge-prompt edit | judge-bias-and-calibration.md | judge validation record with minimal-pair results, agreement statistic and n, mitigations, residual blind spots |
+| JDG-04 | Create an evaluation set or state a numeric release threshold on top of one | judge-bias-and-calibration.md | gate specification per failure class with metric, threshold, n, SE/CI, blocking status, owner, frozen-set hash |
 | SEC-01 | Threat-model an AI system | security-governance.md | assets, boundaries, abuse cases, controls |
 | SEC-02 | Permit an external effect | security-governance.md | authenticated, authorized, validated action record |
 | SEC-03 | Conduct or reconstruct authorized offensive testing, passive/active boundaries, or security-testing limits | security-governance.md | signed scope, passive-first plan, artifacts, stop record, and ASM-01 non-guarantee audit |
+| FIN-01 | AI participates in fraud, AML/sanctions screening, or credit-adjacent decisioning | financial-crime-model-risk.md | model/tool classification and inventory entry |
+| FIN-02 | Validate or govern a model under formal model risk management | financial-crime-model-risk.md | three-element validation record with independence evidence |
+| FIN-03 | Set or change a detection threshold or filtering criterion | financial-crime-model-risk.md | approved threshold change record with both-side test evidence |
+| FIN-04 | Choose metrics or labels for a rare-event decision system | financial-crime-model-risk.md | cost-weighted metric set and label-latency/feedback design |
+| FIN-05 | Release or monitor a model facing an adapting adversary | financial-crime-model-risk.md | drift/probing monitors, fast-path change policy, shadow-canary plan |
+| FIN-06 | An automated decision produces an adverse action about a person | financial-crime-model-risk.md | attribution-bound reason codes and cohort/disparity test evidence |
+| FIN-07 | An agent could take an adverse action against a person autonomously | financial-crime-model-risk.md | evidenced, reviewable, explainable, appealable gate or human decision |
+| FRD-01 | A model, prompt, or agent emits a decision-bearing score under formal model risk management | fraud-model-risk-guardrails.md | tiered inventory entry and three-element validation record with independence evidence |
+| FRD-02 | Design or tune a fraud, AML, or other rare-event detection system | fraud-model-risk-guardrails.md | cost-weighted operating point, both-side threshold-change record, adversarial-drift monitors |
+| FRD-03 | An automated or agentic decision goes against a person | fraud-model-risk-guardrails.md | attribution-bound reason set, evidence record, human reviewability, appeal path, cohort test evidence |
+| FRD-04 | An agent acts rather than scores in a fraud or financial-crime path | fraud-model-risk-guardrails.md | typed-tool authority map, budgets, irreversible-action gate, idempotency/compensation and confidentiality partitioning |
+| REG-01 | Work falls inside a regulated regime for life sciences, healthcare, payments, or financial reporting | regulated-domain-controls.md | applicability frame naming regime, obligation, control, and named owner |
+| REG-02 | An action, record, or decision must be evidenced for inspection or audit | regulated-domain-controls.md | audit-event schema, immutability and retention mechanism, reviewer and cadence, human-readable export |
+| REG-03 | Validate or change a regulated system, including a provider or model version change | regulated-domain-controls.md | risk assessment, frozen eval set with thresholds, revalidation-trigger table, per-change control record |
+| REG-04 | Regulated or personal data enters a prompt, trace, index, or memory store | regulated-domain-controls.md | field classification and data-flow map, scope-exclusion argument, de-identification residual risk, per-class retention map |
+| REG-05 | Model output becomes an official record, signed record, or reporting input | regulated-domain-controls.md | official-output register, approval state machine, reviewer packet, approve/edit/reject schema, approved-source integrity check |
 | OPS-01 | Make execution durable | production-operations.md | checkpoint/idempotency/recovery design |
 | OPS-02 | Release a version | production-operations.md | gated canary and rollback plan |
 | OPS-03 | Observe production | production-operations.md | traces, SLOs, alerts, sampling plan |
 | OPS-04 | Require sovereign/local/offline deployment | production-operations.md | threat, residency, capability, and operating design |
+| RUN-01 | An agent will run on a vendor-managed serverless agent runtime | managed-agent-runtimes.md | dated constraint sheet with sourced limits, statelessness and resumability gates |
+| RUN-02 | Place durable state, memory, or identity on managed runtime services | managed-agent-runtimes.md | state-placement table, caller-to-effect identity map, retention/deletion decision with verification status |
+| RUN-03 | Operate, observe, or cost a managed-runtime agent | managed-agent-runtimes.md | span and audit/debug split, quota-sized design, retry classification, version/rollback and cost-driver model |
 | EVL-01 | Repeated failures appear in trajectories | continuous-improvement.md | causal failure cluster |
 | EVL-02 | Improve official agent behavior | continuous-improvement.md | smallest safe versioned update |
 | DBG-01 | System fails or underperforms | debugging-playbooks.md | earliest failing layer and regression case |

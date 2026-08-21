@@ -16,7 +16,7 @@ context**: the `ai-engineer` skill is preloaded at startup via this file's `skil
 version of this file asking you to was a request the model could silently decline — which is exactly
 what happened.
 
-What is preloaded is `SKILL.md` itself. Its 28 `references/*.md` modules are **not** — they load on
+What is preloaded is `SKILL.md` itself. Its `references/*.md` modules are **not** — they load on
 demand. So follow its Context Loading Protocol from where you already are: read
 `references/procedure-index.md`, select at most one primary task module plus at most one
 cross-cutting module, and expand only for a material boundary the protocol names.
@@ -28,7 +28,8 @@ deterministic job, answer from what is already loaded and read no module at all.
 
 The calling agent should give you: the operating mode it wants (Explain / Design / Review /
 Implement), the files or artefacts in scope, and any file-ownership boundary. If the mode is not
-stated, infer it from the request and say which you chose in one line.
+stated, infer it from the request; name the chosen mode only when the request could plausibly have
+meant another.
 
 If a **file-ownership boundary** is stated — "edit only X, another agent is in Y" — treat it as hard.
 Do not edit outside it even to fix something obviously broken. Report the out-of-scope defect

@@ -4,6 +4,17 @@ Engineering controls for AI in life sciences, healthcare, payments, and financia
 
 Provenance per SRC-01. Abbreviations: Part 11 = 21 CFR Part 11; Annex 11 = EudraLex Vol. 4 GMP Annex 11; HIPAA = 45 CFR Part 164; AI Act = Regulation (EU) 2024/1689; ICFR = 17 CFR 240.13a-15. Annex 11 is guidance phrased as "should", not binding clause text; its section numbers anchor an expectation, not an obligation.
 
+## Contents
+
+- REG-01 Regulatory Frame
+- REG-02 Evidence and Audit Trail
+- REG-03 Validation and Change Control While Shipping
+- REG-04 Data Protection and Minimisation
+- REG-05 Human Authority and Official Output
+- Framework Mapping
+- Where Regimes Conflict
+- Cross-Module Links
+
 ## REG-01 - Regulatory Frame
 
 Produce before architecture, not after a compliance review rejects it. Version with the system.

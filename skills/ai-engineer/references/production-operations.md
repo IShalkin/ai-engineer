@@ -62,6 +62,4 @@ For predictive ML, monitor distinct failure layers: infrastructure and serving h
 
 Local deployment improves control but does not automatically deliver privacy, safety, quality, or availability.
 
-## Source Depth
-
-Use [MLD-01](ml-system-design-lifecycle.md) for ML monitoring and ownership gates. Add deeper book or organization-specific variants only through [source-extension.md](source-extension.md).
+Use [MLD-01](ml-system-design-lifecycle.md) for ML monitoring and ownership gates.

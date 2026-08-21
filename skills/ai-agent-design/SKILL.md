@@ -5,7 +5,13 @@ context: fork
 agent: ai-engineer
 background: false
 effort: high
+argument-hint: "<the graph, loop, tool, or agent runtime to work on>"
 ---
+
+Design or review the runtime shape of: $ARGUMENTS
+
+If the subject is empty, state the three facts you need and return; a forked context cannot ask the
+caller.
 
 Load by what the task actually is, not all of them:
 

@@ -65,7 +65,7 @@ Deploying an agent onto a vendor-managed serverless agent runtime. State the ven
 
 ## Worked Example - Bedrock AgentCore
 
-`CURRENT_PRIMARY` against the AgentCore developer guide and named package index at verification time unless labelled otherwise. Those pages carry no version or date; verify before implementation.
+`CURRENT_PRIMARY` against the AgentCore developer guide and named package index at verification time unless labelled otherwise. Those pages carry no version or date; verify before implementation. Snapshot source: [AgentCore developer guide](https://docs.aws.amazon.com/bedrock-agentcore/latest/devguide/what-is-bedrock-agentcore.html) and its [runtime service contract](https://docs.aws.amazon.com/bedrock-agentcore/latest/devguide/runtime-service-contract.html).
 
 - **Components.** Harness, Runtime, Memory, Gateway, Identity, Code Interpreter, Browser, Observability, Payments, Evaluations, Optimization, Policy, Registry, usable independently; the frequent "seven components" framing is stale.
 - **Runtime.** HTTP 8080 `/invocations` (`/ws` optional), MCP 8000 `/mcp`, A2A 9000 `/`, AG-UI 8080; containers bind `0.0.0.0` and target ARM64. Health is `GET /ping` returning `Healthy` or `HealthyBusy`, plus an optional `time_of_last_update` set only on an actual status change. Synchronous request timeout 15 min, streaming 60 min, async job 8 h, payload 100 MB, image 2 GB, 2 vCPU/8 GB per session, none adjustable.
@@ -84,7 +84,5 @@ Deploying an agent onto a vendor-managed serverless agent runtime. State the ven
 - **Vertex AI Agent Engine** (`CURRENT_PRIMARY` for component names only; a Gemini Enterprise rebrand is live): managed runtime for several frameworks, sessions service, memory bank of persistent long-term memories, sandboxed code execution and computer use, example store, service-account identity, platform trace and logging. Field names, extraction behaviour, and retention semantics are `UNVERIFIED`.
 
 The port is mechanical when the design targets the contract: swap the session header, memory client, identity binding, and telemetry destination. It is a rewrite when durable state, actor identity, or the approval path depends on a vendor's field names.
-
-## Source Depth
 
 Use [agent-harness-loop.md](agent-harness-loop.md) for the pause/resume state machine, [production-operations.md](production-operations.md) for durability and release, [security-governance.md](security-governance.md) for the authority gate, and [agents-tools-protocols.md](agents-tools-protocols.md) for tool and memory contracts.

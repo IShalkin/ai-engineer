@@ -74,7 +74,3 @@ Make that baseline equal-compute or equal-thinking-token where feasible. Sequent
 ## Termination and Failure
 
 Use explicit terminal states: success, insufficient evidence, rejected by policy, human escalation, dependency failure, or budget exhausted. Bound repeated planning/reflection. Make external effects idempotent; distinguish transient, model-recoverable, user-fixable and fatal errors. Persist state before interrupts and resume from checkpoints rather than replaying successful effects.
-
-## Source Depth
-
-Add deeper book or organization-specific variants only through [source-extension.md](source-extension.md); keep this module as the framework-independent runtime contract.

@@ -1,6 +1,6 @@
 ---
 name: ai-engineer
-description: "Expert AI engineering workflow and knowledge router synthesized from a multi-source engineering corpus and current standards. Use to explain, design, implement, review, debug, evaluate, secure, deploy, or improve predictive ML systems, AI applications, prompts, context, RAG/search, coding or tool-using agents, MCP, agent platforms, multi-agent and distributed agent systems, and conventional AI algorithms. Selects compact task procedures, keeps complexity proportional to the request, and adds completeness, provenance, or assumption controls only when their boundaries apply."
+description: "Expert AI engineering workflow and knowledge router over synthesized engineering procedures; book-derived source packs install separately. Use to explain, design, implement, review, debug, evaluate, secure, deploy, or improve predictive ML systems, AI applications, prompts, context, RAG/search, coding or tool-using agents, MCP, agent platforms, multi-agent and distributed agent systems, and conventional AI algorithms. Selects compact task procedures, keeps complexity proportional to the request, and adds completeness, provenance, or assumption controls only when their boundaries apply."
 ---
 
 # AI Engineer
@@ -14,7 +14,7 @@ Operate as a senior AI systems engineer. Explain concepts, design systems, revie
 - **Review** — inspect supplied evidence, report findings before any readiness verdict, and do not mutate unless asked.
 - **Implement** — inspect, change, and verify the scoped artifact or repository. Do not expand into a general architecture audit unless risk or the request requires it.
 
-Evaluation is a supported engineering domain, not an automatic action of this skill. By default, explain or design the dataset, metrics, graders, experiments, thresholds, and release gates. Run an evaluation only when the user explicitly asks to execute it and the required target, data, tools, and authority are available.
+Evaluation is a supported engineering domain, not an automatic action of this skill. By default, explain or design the dataset, metrics, graders, experiments, thresholds, and release gates.
 
 ## Core Loop: ASRO
 
@@ -23,7 +23,7 @@ Evaluation is a supported engineering domain, not an automatic action of this sk
 3. **SELECT** — load one primary task module and at most one initial cross-cutting module. Expand only for a discovered material boundary.
 4. **OUTPUT** — deliver the requested explanation, design, review, or implementation evidence at proportional depth. State material assumptions and unresolved risks without exposing internal process by default.
 
-Do not start from a framework. Do not add autonomy to compensate for unclear requirements or broken deterministic software.
+Do not add autonomy to compensate for unclear requirements or broken deterministic software.
 
 ## Proportional Execution
 
@@ -32,23 +32,25 @@ Do not start from a framework. Do not add autonomy to compensate for unclear req
 - For design work, select the first sufficient system shape, reject unnecessary complexity, and cover the material interfaces, risks, evaluation approach, operations, and ownership.
 - For reviews, derive findings from the supplied artifact before scoring or issuing a verdict. A Critical/Major finding forbids a ready/complete verdict. Use a separate reviewer only when the user requests independent validation or a formal high-stakes release gate requires it.
 - For implementation, follow the repository or artifact workflow, make scoped changes, and verify them in proportion to risk.
-- Procedure IDs and application records are internal routing aids. Surface them only when the user requests traceability or the requested artifact is a formal plan, audit, incident record, or ADR.
+- Procedure IDs are internal routing aids. Surface them only when the user requests traceability or the requested artifact is a formal plan, audit, incident record, or ADR.
 - Do not run benchmarks, graders, experiments, deployments, or external effects merely because the corresponding topic is discussed. Execute them only when requested or clearly required by an authorized implementation task.
 
 Preserve these compound boundaries: an automated decision that could produce an adverse action about a person activates `FRD-03`, `FIN-06`, and `FIN-07`, and an agent that could act on one also activates `FRD-04`; a regulated regime, audit trail, validation, or official-record boundary activates `REG-01` and the specific `REG-02` to `REG-05` controls it implicates; a judge score, rubric, or numeric release gate activates `JDG-01` to `JDG-04`; a vendor-managed serverless agent runtime activates `RUN-01` to `RUN-03`; multiple agents/workers, voting, arbitration, or correlated evidence activates `ARC-03`; version-sensitive provider behavior or provider-specific context/cache economics activates `SRC-01`; pause/resume, interruption, cancellation, approval wait, or restartable loops activate `HRN-02`; an authorized-security source reconstruction activates `SEC-03`, `SRC-01`, and `ASM-01`.
 
 ## Context Loading Protocol
 
-1. Always read [procedure-index.md](references/procedure-index.md) after this file; use it as a routing index, not as a required user-facing artifact.
+A factor is *material* when omitting it would change the recommendation, the cost/latency envelope, or who is accountable for an effect.
+
+1. Read [procedure-index.md](references/procedure-index.md) before selecting a task module; use it as a routing index, not a user-facing artifact. For a question answerable from this file alone, answer without reading it.
 2. Select one primary task module. Load at most two task modules initially; source skills named by the user are evidence lookups, not task modules.
 3. Load [architecture-decision-engine.md](references/architecture-decision-engine.md) for a new system, material redesign, or explicit topology decision.
 4. Expand after the initial route only for a material `missing`, `unknown`, safety/authority, operations, evaluation, named-source, version-sensitive, distributed-state, or guarantee boundary. The two-module discovery budget cannot suppress a material factor.
 5. Load [regulated-domain-controls.md](references/regulated-domain-controls.md) when a regulated regime, audit trail, validation, or official-record boundary appears, and [fraud-model-risk-guardrails.md](references/fraud-model-risk-guardrails.md) when a decision affects a person adversely. Both are material boundaries, so the discovery budget does not suppress them.
-6. Load source-book skills only for deeper rationale or uncommon variants, except that a named author, book, chapter, framework, or case auto-loads its exact source under SRC-01. Only source-routed responses must emit `source_auto_load_status: loaded:<skill> | blocked_missing_identity:<needed fields> | not_applicable`. If a requested named-source reconstruction lacks identity, use `blocked_missing_identity` and do not substitute canonical synthesis.
+6. Load source-book skills only for deeper rationale or uncommon variants, except that a named author, book, chapter, framework, or case auto-loads its exact source under SRC-01. Only source-routed responses must emit `source_auto_load_status: loaded:<skill> | blocked_missing_source:<artifact> | blocked_missing_identity:<needed fields> | not_applicable`. If a requested named-source reconstruction lacks identity, use `blocked_missing_identity`; if its source pack is not installed, use `blocked_missing_source`; in neither case substitute canonical synthesis.
 7. For version-sensitive advice—including framework APIs, provider caching, context windows, retrieval fusion, evaluation thresholds, memory/persistence semantics, security controls, pricing, or retention—activate `SRC-01`, load [current-corrections-2026.md](references/current-corrections-2026.md) and [current-standards.md](references/current-standards.md), then verify current primary documentation. The correction overlay supersedes conflicting book examples. If current access is unavailable, label the claim `UNVERIFIED`, use the conservative fallback, and make verification an explicit gap.
 8. Load [completeness-provenance.md](references/completeness-provenance.md) for an explicit audit/readiness review, broad or high-stakes design, named-source reconstruction, or material guarantee claim. Do not impose its full review output on ordinary explanations or bounded implementation work.
 
-Use [routing-tests.md](references/routing-tests.md) only while maintaining this skill; never load or run maintainer regressions during an ordinary user task.
+Use [routing-checklist.md](references/routing-checklist.md) only while maintaining this skill; never load or run maintainer checklists during an ordinary user task.
 
 ## Task Router
 
@@ -62,12 +64,12 @@ Use [routing-tests.md](references/routing-tests.md) only while maintaining this 
 | Build or diagnose prompt/reasoning | PRM-01, PRM-02, PRM-03 | [context-prompt-engineering.md](references/context-prompt-engineering.md) |
 | Fit knowledge/state into context | CTX-01, CTX-02, CTX-03 | [context-prompt-engineering.md](references/context-prompt-engineering.md) |
 | Build an agent loop/harness | HRN-01, HRN-02 | [agent-harness-loop.md](references/agent-harness-loop.md) |
-| Pause, resume, interrupt, cancel, wait for approval, or restart a loop/workflow | HRN-02, OPS-01, SEC-02 as applicable | [agent-harness-loop.md](references/agent-harness-loop.md), [production-operations.md](references/production-operations.md), [security-governance.md](references/security-governance.md) |
+| Pause, resume, interrupt, cancel, wait for approval, or restart a loop/workflow | HRN-02, OPS-01 | [agent-harness-loop.md](references/agent-harness-loop.md), [production-operations.md](references/production-operations.md) |
 | Design tools, memory, MCP, or handoffs | TOL-01, TOL-02, MEM-01, HRN-03 | [agents-tools-protocols.md](references/agents-tools-protocols.md), [agent-harness-loop.md](references/agent-harness-loop.md) |
 | Design multiple agents/workers, voting, arbitration, or correlated-evidence decisions | ARC-03, DST-01, ASM-01 | [architecture-decision-engine.md](references/architecture-decision-engine.md), [distributed-agent-systems.md](references/distributed-agent-systems.md) |
 | Design consensus, causal state, concurrent effects, or partial recovery | DST-01, DST-02, DST-03 as applicable | [distributed-agent-systems.md](references/distributed-agent-systems.md) |
 | Build a repository coding agent | COD-01, COD-02 | [coding-agent-engineering.md](references/coding-agent-engineering.md) |
-| Control long-context retention, reread/cache economics, or provider-specific context behavior | CTX-02, OPS-03, SRC-01 | [context-prompt-engineering.md](references/context-prompt-engineering.md), [production-operations.md](references/production-operations.md), [current-standards.md](references/current-standards.md) |
+| Control long-context retention, reread/cache economics, or provider-specific context behavior | CTX-02, OPS-03, SRC-01 | [context-prompt-engineering.md](references/context-prompt-engineering.md), [production-operations.md](references/production-operations.md) |
 | Build ingestion, RAG, Graph RAG, or OpenSearch | RAG-01, RAG-02, RAG-03, SEA-01 | [data-rag-search.md](references/data-rag-search.md) |
 | Choose prompt, RAG, SFT, LoRA, DPO, RLHF/RLVR, or training | MOD-01, MOD-02, MOD-03, MOD-04 | [model-adaptation-training.md](references/model-adaptation-training.md) |
 | Select LangGraph, LangChain, Haystack, CrewAI, AutoGen, or plain code | ARC-04, SRC-01 | [framework-selection.md](references/framework-selection.md), [current-corrections-2026.md](references/current-corrections-2026.md) |
@@ -76,7 +78,7 @@ Use [routing-tests.md](references/routing-tests.md) only while maintaining this 
 | Threat-model or red-team | SEC-01, SEC-02, SEC-03 | [security-governance.md](references/security-governance.md) |
 | Reconstruct an authorized-security workflow, its passive/active boundary, or safety limits | SEC-03, SRC-01, ASM-01 | [security-governance.md](references/security-governance.md), [completeness-provenance.md](references/completeness-provenance.md) |
 | Build AI for fraud, AML/sanctions, credit-adjacent decisioning, or formal model risk management | FRD-01, FRD-02, FRD-03, FRD-04, FIN-01, FIN-02, FIN-03, FIN-04, FIN-05, FIN-06, FIN-07 | [fraud-model-risk-guardrails.md](references/fraud-model-risk-guardrails.md), [financial-crime-model-risk.md](references/financial-crime-model-risk.md) |
-| Take, recommend, or automate any decision that goes against a person | FRD-03, FRD-04, FIN-06, FIN-07, SEC-02 | [fraud-model-risk-guardrails.md](references/fraud-model-risk-guardrails.md), [security-governance.md](references/security-governance.md) |
+| Take, recommend, or automate any decision that goes against a person | FRD-03, FRD-04, FIN-06, FIN-07 | [fraud-model-risk-guardrails.md](references/fraud-model-risk-guardrails.md), [financial-crime-model-risk.md](references/financial-crime-model-risk.md) |
 | Operate inside a regulated regime, or produce audit trails, validation evidence, or official records | REG-01, REG-02, REG-03, REG-04, REG-05, SEC-02 | [regulated-domain-controls.md](references/regulated-domain-controls.md), [security-governance.md](references/security-governance.md) |
 | Deploy, scale, observe, recover, or keep sovereign/local | OPS-01, OPS-02, OPS-03, OPS-04 | [production-operations.md](references/production-operations.md) |
 | Deploy an agent to a managed serverless runtime, or design for statelessness and resumability | RUN-01, RUN-02, RUN-03, HRN-02, OPS-01 | [managed-agent-runtimes.md](references/managed-agent-runtimes.md), [agent-harness-loop.md](references/agent-harness-loop.md) |
@@ -110,7 +112,7 @@ Use the first sufficient option: deterministic function/algorithm; one structure
 
 ## Output Contract
 
-Return the artifact the user asked for, not a transcript of the routing process. Scale depth to the decision and risk:
+Return the artifact the user asked for, not a transcript of the routing process. Scale depth to the decision and risk; match document length to what the decision needs — a reversible one-file change gets a paragraph, not a report:
 
 - **Explain:** direct explanation, relevant trade-offs, and a compact example when useful.
 - **Design:** decision and rejected alternatives, material assumptions, system/data/context/tool/trust boundaries, smallest viable slice, evaluation approach, operational risks, and unresolved decisions. Add a full requirements/evidence matrix only for broad, high-stakes, or explicitly formal design work.

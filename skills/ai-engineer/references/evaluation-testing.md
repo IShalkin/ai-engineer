@@ -6,12 +6,14 @@ Use this module to explain or design evaluation datasets, metrics, graders, expe
 
 ## Contents
 
-- Evaluation model
-- Dataset lifecycle
-- Metrics by layer
-- Judge discipline
-- Agent tests
-- Release gates
+- Evaluation Model
+- ML System Evaluation Discipline
+- EVA-01 Evaluation Dataset Lifecycle
+- EVA-02 Three-Level Agent Evaluation
+- EVA-03 LLM-as-Judge Discipline
+- Agent Tests
+- Release Gate
+- Completeness, Grounding, and Anti-Sycophancy Gates
 
 ## Evaluation Model
 
@@ -67,9 +69,9 @@ Do not collapse retrieval and generation into one RAG score. Faithfulness is sup
 
 ## EVA-03 — LLM-as-Judge Discipline
 
-Write a narrow rubric with observable criteria. Calibrate against human labels, measure disagreement, randomize position where comparisons are used, prevent the judge from seeing irrelevant identifiers, and retain judge model/prompt/version. Use deterministic checks whenever possible. Do not let the same model architecture define, produce and solely judge success on high-risk tasks.
+Write a narrow rubric with observable criteria. Calibrate against human labels, measure disagreement, score both orders and count a win only when preference holds in both (JDG-01), prevent the judge from seeing irrelevant identifiers, and retain judge model/prompt/version. Use deterministic checks whenever possible. Do not let the same model architecture define, produce and solely judge success on high-risk tasks.
 
-`temperature=0` may reduce sampling variance but does not guarantee deterministic or unbiased judgment. Repeat material stochastic evaluations, monitor variance, and use multiple judges or human adjudication when disagreement matters.
+`temperature=0` may reduce sampling variance but does not guarantee deterministic or unbiased judgment. Repeat material stochastic evaluations, monitor variance, and escalate disagreement to human adjudication; multi-judge ensembles are unproven cost (JDG-03).
 
 ### Mandatory judge record order
 
@@ -112,8 +114,6 @@ Require task success above baseline; zero critical policy violations; acceptable
 - Treat agreement with the candidate or other judges as neither evidence nor correctness.
 - Keep hidden paraphrases that describe symptoms without leaking target technique names.
 
-While maintaining this public skill, use [routing-tests.md](routing-tests.md) as the behavior boundary and run `scripts/validate_public_skill.py`. Keep any private or organization-specific evaluation packages outside the distributed skill. Do not load or run maintainer artifacts merely because a user asks about evaluation. Use REV-01, SRC-01, and ASM-01 only when their review, source, or guarantee boundaries apply.
+While maintaining this public skill, use [routing-checklist.md](routing-checklist.md) as the behavior boundary and run `scripts/validate_public_skill.py`. Keep any private or organization-specific evaluation packages outside the distributed skill. Do not load or run maintainer artifacts merely because a user asks about evaluation. Use REV-01, SRC-01, and ASM-01 only when their review, source, or guarantee boundaries apply.
 
-## Source Depth
-
-Use [MLD-02](ml-system-design-lifecycle.md) for stage-aware review. Add deeper book or organization-specific variants only through [source-extension.md](source-extension.md).
+Use [MLD-02](ml-system-design-lifecycle.md) for stage-aware review.

@@ -96,6 +96,4 @@ Reject or revise a design when:
 
 Bias toward stronger handling for consequential ambiguity, but do not systematically over-route every request. Keep permissions independent of model tier.
 
-## Source Depth
-
-Use [MLD-01](ml-system-design-lifecycle.md) for the complete problem-to-ownership ML lifecycle. Add exact book or organization-specific sources only through [source-extension.md](source-extension.md).
+Use [MLD-01](ml-system-design-lifecycle.md) for the complete problem-to-ownership ML lifecycle.

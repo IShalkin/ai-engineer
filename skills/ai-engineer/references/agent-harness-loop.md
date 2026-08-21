@@ -39,7 +39,3 @@ Compare task success, cost, latency, duplication, and failure containment agains
 ## Failure Signals
 
 Autonomy for known deterministic steps, state only in chat, retry without classification, supervisor approval without independent evidence, persona-only agents, shared-context explosion, circular delegation, no cancellation, and no durable artifact ownership.
-
-## Source Depth
-
-Deeper harness variants and worked examples live in book-derived source packs this package does not ship. Route a request for them through [source-extension.md](source-extension.md) (COV-01); if no pack is installed, report `blocked_missing_source` rather than substituting synthesis for a source.

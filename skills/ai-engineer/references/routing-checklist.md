@@ -1,6 +1,8 @@
-# Routing Evaluation Set
+# Routing Review Checklist
 
-Use these cases after changing `SKILL.md`, descriptions, procedure IDs, or module boundaries. A pass requires selecting the expected first procedures and avoiding irrelevant source loading. Exact wording may vary; the boundary is the test.
+A maintainer checklist, not an executable suite: there is no runner, and a human reads each case and judges the route by hand. Coverage is partial — 33 cases touch 46 of the 75 procedure IDs, so 29 IDs (ARC-04, ART-01, FIN-01 to FIN-07, FRD-01 to FRD-04, HRN-01, JDG-01 to JDG-04, MEM-01, OPS-02, PRM-03, REG-01 to REG-05, RUN-01 to RUN-03) have no case here. An ID absent from this file is unchecked, not correct.
+
+Walk these cases after changing `SKILL.md`, descriptions, procedure IDs, or module boundaries. A case passes when the expected first procedures are selected and irrelevant source loading is avoided. Exact wording may vary; the boundary is the check.
 
 | Case | Request signal | Expected first route | Must not load first |
 |---|---|---|---|
@@ -40,18 +42,18 @@ Use these cases after changing `SKILL.md`, descriptions, procedure IDs, or modul
 | RT-32 | “Design an evaluation plan for this RAG system” | EVA-01, RAG-02 | automatic benchmark execution or skill self-evaluation |
 | RT-33 | “Run the supplied evaluation cases against this endpoint” | EVA-01, EVA-02 | plan-only response when execution artifacts and authority are available |
 
-## Evaluation Procedure
+## Review Procedure
 
 1. Paraphrase each case three ways, including one misleading framework keyword.
 2. Record selected procedure IDs and initial files loaded.
 3. Fail false positives as well as missed routes.
 4. Check that no more than two task modules load initially unless the request crosses a clear boundary.
-5. In the maintainer regression record, capture trigger, selected procedures, initial modules, output mode, and evidence. Do not require these internal fields in the user-facing response.
-6. Add real routing failures after deduplication; keep a held-out paraphrase set.
+5. In the maintainer review record, capture trigger, selected procedures, initial modules, output mode, and evidence. Do not require these internal fields in the user-facing response.
+6. Add real routing failures after deduplication, and add a case the first time an uncovered ID misroutes; keep a held-out paraphrase set.
 
 7. As a maintainer check, run `python scripts/validate_public_skill.py`. Keep private target answers and organization-specific cases outside the distributed skill.
 
-8. Assert compound trigger invariants independently of wording: multi-participant voting/correlated evidence includes ARC-03; provider-specific context/cache economics includes SRC-01 and an explicit current-primary verification result or gap; pause/resume/cancel/approval-wait/restart loops include HRN-02 rather than substituting OPS/DST; authorized-security source reconstructions include SEC-03, SRC-01, and ASM-01; every source route emits `source_auto_load_status` as loaded, blocked-missing-identity, or not-applicable; formal review/judge output emits findings before score/verdict and gives every addition a source class.
+8. Assert compound trigger invariants independently of wording: multi-participant voting/correlated evidence includes ARC-03; provider-specific context/cache economics includes SRC-01 and an explicit current-primary verification result or gap; pause/resume/cancel/approval-wait/restart loops include HRN-02 rather than substituting OPS/DST; authorized-security source reconstructions include SEC-03, SRC-01, and ASM-01; every source route emits `source_auto_load_status` as loaded, blocked-missing-source, blocked-missing-identity, or not-applicable; formal review/judge output emits findings before score/verdict and gives every addition a source class.
 
 ## Negative Activation Rules
 
@@ -65,4 +67,4 @@ Use these cases after changing `SKILL.md`, descriptions, procedure IDs, or modul
 - Fixed low-risk one-step deterministic work is answered directly without module loading or activation metadata; missing ordinary input does not convert it into a hyper-skill review task.
 - A request to explain or design evaluation returns an explanation or evaluation specification by default; it does not trigger benchmark execution or evaluation of this skill.
 - Evaluation execution requires an explicit request plus the target, data, tools, budget, and authority needed to run it.
-- Procedure IDs and application records remain internal unless traceability or a formal engineering artifact is requested.
+- Procedure IDs remain internal unless traceability or a formal engineering artifact is requested.

@@ -5,7 +5,13 @@ context: fork
 agent: ai-engineer
 background: false
 effort: max
+argument-hint: "<the metric, gate, judge, or eval set to work on>"
 ---
+
+Design or repair the measurement for: $ARGUMENTS
+
+If the subject is empty, state the three facts you need and return; a forked context cannot ask the
+caller.
 
 Load these two before deciding anything, in this order:
 
@@ -30,8 +36,9 @@ Four failures recur, and each has a cheaper answer than the one first proposed:
   Compute the required n and say it out loud. If n is larger than the eval set anyone will build,
   the threshold is undeliverable and that is the finding.
 - **A single LLM judge as the gate.** Measured judge agreement rules this out for anything
-  consequential. Either the gate is deterministic, or the judge is one vote among several with a
-  unanimity or majority rule, and the residual disagreement rate is published.
+  consequential. Make the gate deterministic. Where no deterministic check exists, escalate
+  disagreement to human adjudication and publish the residual disagreement rate; multi-judge
+  ensembles are unproven cost (JDG-03).
 - **Human approval treated as a clean label.** Approved material fails its own standards routinely.
   An approval is evidence that no one objected, not that the artefact is correct.
 - **A count reported as coverage.** A green suite means previously-found bugs stay fixed. It says

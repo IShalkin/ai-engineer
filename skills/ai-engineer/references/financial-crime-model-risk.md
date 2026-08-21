@@ -1,5 +1,7 @@
 # Financial Crime, Credit Decisioning, and Model Risk Management
 
+This module owns the BSA/AML, sanctions, and credit-decisioning specifics - the model-classification determination, threshold governance under the FFIEC manual, regulator-set fraud-rate metrics, CDD/KYC evidence and staleness, and SAR clocks and retention - while [fraud-model-risk-guardrails.md](fraud-model-risk-guardrails.md) is canonical for the shared model-risk framework, detection-system design, adverse-action explainability, and agent authority controls, and its citation wins wherever both state the same control.
+
 Engineering controls for AI in fraud prevention, AML/sanctions screening, and credit-adjacent decisioning about people. These are controls that help an accountable owner satisfy an obligation; none of this is legal advice and the obligation is never transferred to engineering.
 
 Instruments cited are US federal banking and consumer-credit sources unless marked otherwise; one EU payments instrument appears as an example of a regulator-set numeric metric. Regulation is jurisdiction- and version-specific: confirm the instrument and amendment in force before designing to a number in it.

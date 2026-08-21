@@ -35,7 +35,3 @@ Online agents collect evidence; they do not directly publish changes to their of
 ## Failure Signals
 
 Live self-modification, self-approved data, visible release tests, changing several layers at once, storing a new rule without testing retrieval, endless prompt accumulation, reward gaming, and promotion without provenance or rollback.
-
-## Source Depth
-
-Deeper variants live in book-derived source packs this package does not ship. Route through [source-extension.md](source-extension.md) (COV-01) and report `blocked_missing_source` if none is installed.

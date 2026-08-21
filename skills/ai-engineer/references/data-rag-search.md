@@ -80,7 +80,3 @@ Measure:
 Failure order: source missing -> parse/chunk defect -> representation mismatch -> filter/routing defect -> low recall -> poor ranking -> context overload -> generation misuse. Fix the earliest failing layer.
 
 Faithfulness measures whether output claims are supported by the supplied context; it is not world factuality. Evaluate retrieval sufficiency, contextual precision/recall/relevance, answer relevance, factuality, citations, and permissions separately. For claim-level gates, decompose atomic claims, measure decomposition precision and recall, and classify each as supported, contradicted, or not mentioned. Calibrate thresholds and fallback on system-specific data; no universal score is a release standard.
-
-## Source Depth
-
-Add deeper book or organization-specific variants only through [source-extension.md](source-extension.md); verify current backend behavior in primary documentation.

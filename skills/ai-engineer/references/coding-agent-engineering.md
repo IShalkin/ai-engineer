@@ -40,7 +40,3 @@ Prefer distinct tools for search, read, patch, diagnostics, tests, VCS inspectio
 ## Failure Signals
 
 Broad file reads before search, opaque rewrites, editing generated or vendored files by accident, using shell authority as a convenience, modifying tests to hide a defect, retrying the same failed command, and declaring completion without diff/effect inspection.
-
-## Source Depth
-
-Use current repository/runtime documentation as primary implementation evidence. Add deeper book or organization-specific variants only through [source-extension.md](source-extension.md).

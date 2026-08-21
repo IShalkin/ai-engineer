@@ -5,7 +5,13 @@ context: fork
 agent: ai-engineer
 background: false
 effort: max
+argument-hint: "<the system, record, or approval boundary to review>"
 ---
+
+Review the regulated-record and authority boundaries of: $ARGUMENTS
+
+If the subject is empty, state the three facts you need and return; a forked context cannot ask the
+caller.
 
 Load these two:
 

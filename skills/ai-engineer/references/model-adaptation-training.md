@@ -55,7 +55,3 @@ Never let the trained policy modify or solely judge its own reward, authorizatio
 ## Failure Signals
 
 Fine-tuning to fix missing context, LoRA chosen from a remembered rank range, synthetic data accepted by its generator, preference labels without disagreement analysis, RL without a safe/verifiable environment, and offline score gains that fail application outcomes.
-
-## Source Depth
-
-Add deeper book or organization-specific variants only through [source-extension.md](source-extension.md). Verify training-library APIs and model/provider constraints from current primary documentation.

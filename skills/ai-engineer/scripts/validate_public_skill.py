@@ -41,6 +41,133 @@ def _frontmatter_tools(text: str) -> "set[str] | None":
     return None
 
 
+# Matches a procedure ID: exactly three uppercase letters, a hyphen, exactly two digits,
+# with no word character on either side -- ARC-01, JDG-04, FIN-07. Deliberately does NOT
+# match prose or version-like neighbours: lowercase (`arc-01`), two or four letters
+# (`ML-01`, `EVAL-01`), one or three digits (`ARC-1`, `ARC-001`), a longer run it is part of
+# (`XARC-01`, `ARC-01A`, `GPT-4o-01`), or anything with the hyphen spelled differently
+# (`ARC 01`, `ARC_01`). Any real ID that fails this pattern is a naming bug, not a false
+# negative to widen the regex for.
+ID_PATTERN = re.compile(r"(?<![0-9A-Za-z])([A-Z]{3}-[0-9]{2})(?![0-9A-Za-z])")
+
+
+def _skill_regions(skill_text: str) -> "dict[str, str]":
+    """The three parts of SKILL.md that can select a procedure, keyed by path name."""
+    router, loading, boundary = [], [], []
+    section = None
+    fenced = False
+    for line in skill_text.splitlines():
+        if line.lstrip().startswith("```"):
+            fenced = not fenced
+            continue
+        if fenced:
+            continue
+        if line.startswith("## "):
+            section = line[3:].strip()
+        if section == "Task Router" and line.startswith("|"):
+            router.append(line)
+        elif section == "Context Loading Protocol" and re.match(r"\s*\d+\.", line):
+            loading.append(line)
+        elif line.startswith("Preserve these compound boundaries"):
+            boundary.append(line)
+    return {
+        "task-router row": "\n".join(router),
+        "compound-boundary paragraph": "\n".join(boundary),
+        "context-loading step": "\n".join(loading),
+    }
+
+
+def check_addressing(
+    index_text: str,
+    skill_text: str,
+    read_module,
+    index_name: str = "references/procedure-index.md",
+    skill_name: str = "SKILL.md",
+) -> "tuple[list[str], dict[str, int]]":
+    """Enforce the ID addressing contract. `read_module(filename)` returns module text or None.
+
+    Returns (errors, counts) where counts reports how many IDs each reachability path
+    selects -- printed even on success, because the maintainer reads those numbers.
+    """
+    errors: list[str] = []
+    rows: list[tuple[str, str]] = []
+    seen: dict[str, int] = {}
+
+    for line in index_text.splitlines():
+        if not line.startswith("|"):
+            continue
+        cells = [c.strip() for c in line.strip().strip("|").split("|")]
+        if len(cells) < 3:
+            continue
+        match = ID_PATTERN.fullmatch(cells[0])
+        if not match:
+            continue
+        procedure_id, canonical = match.group(1), cells[2]
+        seen[procedure_id] = seen.get(procedure_id, 0) + 1
+        if seen[procedure_id] > 1:
+            errors.append(
+                f"{index_name}: {procedure_id} appears in {seen[procedure_id]} table rows; "
+                "delete the duplicates so one ID names one canonical file"
+            )
+            continue
+        rows.append((procedure_id, canonical))
+
+    # Fail closed: an unparseable table must never read as a silent pass.
+    if not rows:
+        errors.append(
+            f"{index_name}: 0 procedure rows parsed -- the ID table is missing or its "
+            "format changed; a row must be `| XXX-NN | trigger | file.md | output |`"
+        )
+        return errors, {}
+
+    for procedure_id, canonical in rows:
+        module_text = read_module(canonical)
+        if module_text is None:
+            errors.append(
+                f"{index_name}: {procedure_id} names canonical file {canonical!r} which does "
+                f"not exist; fix the row or add the module"
+            )
+            continue
+        if not any(
+            line.startswith("#") and procedure_id in ID_PATTERN.findall(line)
+            for line in module_text.splitlines()
+        ):
+            errors.append(
+                f"{canonical}: no heading contains {procedure_id}, but {index_name} makes it "
+                f"that ID's canonical home; restore the heading or repoint the index row"
+            )
+
+    indexed = {procedure_id for procedure_id, _ in rows}
+    regions = _skill_regions(skill_text)
+    reached_by = {name: set(ID_PATTERN.findall(text)) for name, text in regions.items()}
+    reachable = set().union(*reached_by.values())
+
+    for name, ids in sorted(reached_by.items()):
+        if not ids:
+            errors.append(
+                f"{skill_name}: no procedure ID is reachable through any {name}; that "
+                "selection path was deleted or reworded -- restore it, or delete this "
+                "arm of the check so its count stops reading as coverage"
+            )
+
+    for procedure_id in sorted(indexed - reachable):
+        errors.append(
+            f"{skill_name}: {procedure_id} is unreachable -- it is in {index_name} but in no "
+            "task-router row, no compound-boundary sentence and no context-loading step; add "
+            "it to one or delete the index row"
+        )
+    for procedure_id in sorted(set(ID_PATTERN.findall(skill_text)) - indexed):
+        errors.append(
+            f"{skill_name}: mentions {procedure_id}, which has no row in {index_name}; add "
+            "the index row and its module heading, or drop the mention"
+        )
+
+    counts = {name: len(ids) for name, ids in reached_by.items()}
+    counts["indexed"] = len(indexed)
+    counts["reachable"] = len(reachable & indexed)
+    return errors, counts
+
+
 def main() -> int:
     errors: list[str] = []
     skill_text = (SKILL / "SKILL.md").read_text(encoding="utf-8")
@@ -140,6 +267,25 @@ def main() -> int:
                     f"ai-engineer-critic must not be granted {tool}: the read-only "
                     f"allowlist is {sorted(CRITIC_ALLOWED)}"
                 )
+
+    references = SKILL / "references"
+
+    def read_module(name: str) -> "str | None":
+        path = references / name
+        if not path.is_file() or not path.resolve().is_relative_to(references):
+            return None
+        return path.read_text(encoding="utf-8")
+
+    index_path = references / "procedure-index.md"
+    if not index_path.is_file():
+        errors.append("missing references/procedure-index.md: nothing addresses procedure IDs")
+    else:
+        addressing_errors, counts = check_addressing(
+            index_path.read_text(encoding="utf-8"), skill_text, read_module
+        )
+        errors.extend(addressing_errors)
+        for name, count in counts.items():
+            print(f"ADDRESSING: {name}: {count}")
 
     if errors:
         print("PUBLIC_SKILL: FAIL")

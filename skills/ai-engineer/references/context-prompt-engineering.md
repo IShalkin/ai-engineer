@@ -82,7 +82,3 @@ Maintain a compact registry: capability, trigger, exclusions, expected input/out
 ## Failure Signals
 
 Prompt bloat, unstable static prefixes, hidden conflicting instructions, copied raw traces, lost identifiers, summaries without evidence, every skill loaded globally, demanded hidden chain-of-thought, unbounded self-reflection, and fixes that pass the example but fail paraphrases.
-
-## Source Depth
-
-Add deeper book or organization-specific variants only through [source-extension.md](source-extension.md); keep prompt and context rules versioned with their evaluators.

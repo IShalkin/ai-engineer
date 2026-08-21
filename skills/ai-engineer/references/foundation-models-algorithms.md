@@ -37,7 +37,3 @@ Hybrid systems are normal: deterministic orchestration and policy around learned
 ## Failure Signals
 
 Using an agent for a fixed algorithm, optimizing an undefined objective, no baseline, treating fluent output as calibrated probability, ignoring partial observability, applying RL without a safe environment/reward, and selecting a model before defining evaluation.
-
-## Source Depth
-
-The full algorithmic map and per-task implementation detail live in source packs this package does not ship. Route through [source-extension.md](source-extension.md) (COV-01) and report `blocked_missing_source` if none is installed.

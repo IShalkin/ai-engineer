@@ -5,3 +5,8 @@ __pycache__/
 .idea/
 .vscode/
 bash.exe.stackdump
+
+# eval run artifacts (reports only - cases, fixtures and code are tracked)
+eval/reports/
+eval/*.report.json
+eval/*.report.txt

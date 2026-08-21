@@ -1,0 +1,10 @@
+{
+  "primary": "p",
+  "modules": [
+    "data-rag-search.md",
+    "agents-tools-protocols.md",
+    "security-governance.md"
+  ],
+  "boundary_ids": [],
+  "mode": "build"
+}

@@ -1,0 +1,8 @@
+{
+  "primary": "p",
+  "modules": [],
+  "boundary_ids": [
+    "b1"
+  ],
+  "mode": "build"
+}

@@ -168,6 +168,272 @@ def check_addressing(
     return errors, counts
 
 
+def _index_rows(index_text: str) -> "list[tuple[str, str, str, int]]":
+    """Procedure-index rows as (id, canonical file, required output, 1-based line number).
+
+    Shared by checks A/B/C/D so one table-shape assumption is written once. Duplicate IDs are
+    left in: check_addressing already reports them, and dropping them here would hide a
+    duplicate's bad Load column or bad done-test.
+    """
+    rows = []
+    for number, line in enumerate(index_text.splitlines(), start=1):
+        if not line.startswith("|"):
+            continue
+        cells = [c.strip() for c in line.strip().strip("|").split("|")]
+        if len(cells) < 4:
+            continue
+        match = ID_PATTERN.fullmatch(cells[0])
+        if match:
+            rows.append((match.group(1), cells[2], cells[3], number))
+    return rows
+
+
+def check_router_load_columns(
+    index_text: str,
+    skill_text: str,
+    index_name: str = "references/procedure-index.md",
+    skill_name: str = "SKILL.md",
+) -> "list[str]":
+    """CHECK A: every ID named in the router must be named by at least one row that also
+    loads the module defining it.
+
+    Naming ARC-04 while no router row that names it loads framework-selection.md sends the
+    agent to a control it cannot read -- the ID resolves in the index but the text never
+    arrives in context. Asserted against column 3 of that ID's index row, so no module name
+    or ID is written here.
+
+    Deliberately per ID, not per (row, ID) pair: a row may name a secondary ID whose home is
+    loaded by that ID's own row or by the expansion rule in the Context Loading Protocol, and
+    requiring the home in every row that mentions it would force Load cells past the
+    two-module budget the same SKILL.md states. What is not tolerated is an ID no row ever
+    pairs with its own module.
+    """
+    errors: list[str] = []
+    canonical = {row[0]: row[1] for row in _index_rows(index_text)}
+    if not canonical:
+        errors.append(
+            f"{index_name}: 0 procedure rows parsed while checking router Load columns; "
+            "the ID table is missing or its format changed"
+        )
+        return errors
+
+    rows = [
+        line for line in _skill_regions(skill_text)["task-router row"].splitlines()
+        if line.startswith("|")
+    ]
+    pairs = 0
+    paired: dict[str, bool] = {}
+    for line in rows:
+        cells = [c.strip() for c in line.strip().strip("|").split("|")]
+        if len(cells) < 3:
+            continue
+        ids_cell, load_cell = cells[1], cells[2]
+        for procedure_id in sorted(set(ID_PATTERN.findall(ids_cell))):
+            module = canonical.get(procedure_id)
+            if module is None:
+                continue  # check_addressing reports an unindexed mention
+            pairs += 1
+            paired[procedure_id] = paired.get(procedure_id, False) or module in load_cell
+    for procedure_id, ok in sorted(paired.items()):
+        if not ok:
+            errors.append(
+                f"{skill_name}: {procedure_id} is named in the Task Router but no row that "
+                f"names it loads {canonical[procedure_id]}, the canonical module that defines "
+                "it; add the module to one of those rows or drop the ID"
+            )
+    if not pairs:
+        errors.append(
+            f"{skill_name}: 0 router-row/ID pairs parsed; the Task Router table is missing or "
+            "its columns changed -- a row must be `| task | IDs | Load |`"
+        )
+    return errors
+
+
+def check_module_reachability(
+    index_text: str,
+    skill_text: str,
+    module_names: "list[str]",
+    skill_name: str = "SKILL.md",
+) -> "list[str]":
+    """CHECK B: every runtime module in references/ must be routed to.
+
+    Reverse of check_addressing, which only proves IDs are reachable. A module nothing loads
+    is dead weight in a package that claims progressive loading.
+
+    Every .md file is required, not only the canonical homes: the version overlays
+    (current-corrections-2026.md, current-standards.md) are named in exactly one protocol step
+    each and own no ID, so a derived "canonical homes only" exemption made orphaning a live
+    overlay invisible. The one exemption is named here with its reason -- routing-checklist.md
+    is a maintainer test list, not runtime content the agent is ever meant to load.
+    """
+    exempt = {"routing-checklist.md"}
+    errors: list[str] = []
+    if not module_names:
+        errors.append("references/: 0 module files found; the directory is missing or empty")
+        return errors
+    canonical = {row[1] for row in _index_rows(index_text)}
+    if not canonical:
+        errors.append(
+            "references/procedure-index.md: 0 procedure rows parsed while checking module "
+            "reachability; the ID table is missing or its format changed"
+        )
+        return errors
+
+    regions = _skill_regions(skill_text)
+    addressed = regions["task-router row"] + "\n" + regions["context-loading step"]
+    if not addressed.strip():
+        errors.append(
+            f"{skill_name}: no Task Router rows and no Context Loading Protocol steps parsed; "
+            "nothing routes to any module"
+        )
+        return errors
+
+    for name in sorted(set(module_names) - exempt):
+        if name not in addressed:
+            errors.append(
+                f"{skill_name}: references/{name} is a runtime module but is named in no "
+                "Load column and no Context Loading Protocol step; route to it or fold it "
+                "into a module that is routed to"
+            )
+    return errors
+
+
+# A done-test has to be falsifiable by reading the output. Two shapes make it so: an explicit
+# integer count, or an enumeration -- a comma-separated list of at least two named deliverables,
+# which a reader can count off. A bare quantifier does NOT: "all relevant items covered",
+# "every material aspect handled", "no issues remain" are the vacuous phrasings this check
+# exists to reject, and they are written in exactly that vocabulary, so accepting
+# all/each/every/no made the check pass its own target class. A quantifier is still fine when it
+# rides along with a count or an enumeration ("all 10 steps, 5 gates each passed").
+# The qualitative escapes are the second arm; published guidance for the target model is that
+# instructions are read literally, so "appropriate controls documented" is satisfied by anything
+# the model already did. Both halves are content classes, not lists of cells.
+_COUNT = re.compile(r"\b[0-9]+\b")
+_QUALITATIVE_ESCAPES = (
+    "appropriate",
+    "reasonable",
+    "as needed",
+    "as applicable",
+    "where relevant",
+    "if useful",
+    "looks fine",
+    "looks good",
+    "high quality",
+)
+
+
+def _countable(required: str) -> bool:
+    if _COUNT.search(required):
+        return True
+    return len([part for part in required.split(",") if part.strip()]) >= 2
+
+
+def check_required_output_shape(
+    index_text: str, index_name: str = "references/procedure-index.md"
+) -> "list[str]":
+    """CHECK C: column 4 of every procedure-index row must be a checkable done-test."""
+    errors: list[str] = []
+    rows = _index_rows(index_text)
+    if not rows:
+        errors.append(
+            f"{index_name}: 0 procedure rows parsed while checking Required output cells; "
+            "the ID table is missing or its format changed"
+        )
+        return errors
+
+    for procedure_id, _, required, number in rows:
+        if not required:
+            errors.append(
+                f"{index_name}:{number}: {procedure_id} has an empty Required output cell"
+            )
+            continue
+        if not _countable(required):
+            errors.append(
+                f"{index_name}:{number}: {procedure_id} Required output {required!r} states no "
+                "integer count and enumerates fewer than two named deliverables, so nothing "
+                "can be counted against it; a bare quantifier is not a count -- state the "
+                "number or list the items"
+            )
+        for escape in _QUALITATIVE_ESCAPES:
+            if escape in required.lower():
+                errors.append(
+                    f"{index_name}:{number}: {procedure_id} Required output {required!r} "
+                    f"contains the qualitative escape {escape!r}; a literal reader satisfies "
+                    "it with anything -- state the observable instead"
+                )
+    return errors
+
+
+_SEGMENT = re.compile(r"[.;!?\n]|(?:^|\n)\s*[-*+]\s")
+
+
+def _count_statements(text: str) -> int:
+    """Sentence- or bullet-sized segments of at least three words."""
+    total = 0
+    for segment in _SEGMENT.split(text):
+        words = [w for w in re.split(r"\s+", re.sub(r"[|`*_#>\[\]()]", " ", segment)) if w]
+        if len(words) >= 3:
+            total += 1
+    return total
+
+
+def check_procedure_bodies(
+    index_text: str,
+    read_module,
+    index_name: str = "references/procedure-index.md",
+    min_statements: int = 3,
+) -> "list[str]":
+    """CHECK D: the section under each ID's canonical heading must have a body.
+
+    check_addressing proves the heading exists; a heading with nothing under it satisfies
+    every other check in this file. `min_statements` is the maintainer's bar (unchanged in
+    value from the line-count bar it replaces), exposed as an argument rather than buried in
+    the body.
+
+    The unit is a statement, not a line: counting non-empty lines measured the author's
+    wrapping, so three lines reading `TODO` passed while a two-paragraph state machine failed.
+    A statement is a sentence- or bullet-sized segment of at least three words, which is the
+    smallest thing that can state part of a procedure.
+    """
+    errors: list[str] = []
+    rows = _index_rows(index_text)
+    if not rows:
+        errors.append(
+            f"{index_name}: 0 procedure rows parsed while checking procedure bodies; the ID "
+            "table is missing or its format changed"
+        )
+        return errors
+
+    for procedure_id, canonical, _, _ in rows:
+        module_text = read_module(canonical)
+        if module_text is None:
+            continue  # check_addressing reports the missing file
+        lines = module_text.splitlines()
+        heading = next(
+            (
+                index for index, line in enumerate(lines)
+                if line.startswith("#") and procedure_id in ID_PATTERN.findall(line)
+            ),
+            None,
+        )
+        if heading is None:
+            continue  # check_addressing reports the missing heading
+        level = len(lines[heading]) - len(lines[heading].lstrip("#"))
+        kept = []
+        for line in lines[heading + 1:]:
+            if line.startswith("#") and len(line) - len(line.lstrip("#")) <= level:
+                break
+            kept.append(line)
+        body = _count_statements("\n".join(kept))
+        if body < min_statements:
+            errors.append(
+                f"{canonical}: section {procedure_id} states {body} statement(s) of three or "
+                f"more words under its heading, fewer than {min_statements}; the index "
+                "addresses a procedure whose body does not state one"
+            )
+    return errors
+
+
 def main() -> int:
     errors: list[str] = []
     skill_text = (SKILL / "SKILL.md").read_text(encoding="utf-8")
@@ -280,12 +546,17 @@ def main() -> int:
     if not index_path.is_file():
         errors.append("missing references/procedure-index.md: nothing addresses procedure IDs")
     else:
-        addressing_errors, counts = check_addressing(
-            index_path.read_text(encoding="utf-8"), skill_text, read_module
-        )
+        index_text = index_path.read_text(encoding="utf-8")
+        addressing_errors, counts = check_addressing(index_text, skill_text, read_module)
         errors.extend(addressing_errors)
         for name, count in counts.items():
             print(f"ADDRESSING: {name}: {count}")
+
+        module_names = sorted(p.name for p in references.glob("*.md"))
+        errors.extend(check_router_load_columns(index_text, skill_text))
+        errors.extend(check_module_reachability(index_text, skill_text, module_names))
+        errors.extend(check_required_output_shape(index_text))
+        errors.extend(check_procedure_bodies(index_text, read_module))
 
     if errors:
         print("PUBLIC_SKILL: FAIL")

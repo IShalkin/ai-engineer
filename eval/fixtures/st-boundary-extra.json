@@ -1,0 +1,9 @@
+{
+  "primary": "p",
+  "modules": [],
+  "boundary_ids": [
+    "b1",
+    "b-unexpected"
+  ],
+  "mode": "build"
+}

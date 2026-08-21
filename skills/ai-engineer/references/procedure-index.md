@@ -54,7 +54,7 @@ Required output is routing shorthand; where the module body also states it, the 
 | SEC-02 | Permit an external effect | security-governance.md | pre-effect binding of actor, tenant, resource, operation, policy, approval, key, expiry |
 | SEC-03 | Conduct or reconstruct authorized offensive testing, passive/active boundaries, or security-testing limits | security-governance.md | signed scope with stop conditions, passive-first plan, stop record, ASM-01 audit |
 | FIN-01 | AI participates in fraud, AML/sanctions screening, or credit-adjacent decisioning | financial-crime-model-risk.md | model-or-not determination with reasoning, full inventory entry |
-| FIN-02 | Validation cannot precede use, or a deficiency is unfixable within the framework (the three elements themselves are FRD-01) | financial-crime-model-risk.md | rejection or compensating-control record naming who accepted the residual risk |
+| FIN-02 | Validation cannot precede use, or a deficiency is unfixable within the framework (the three elements themselves are FRD-01) | financial-crime-model-risk.md | the deficiency stated, rejection or the compensating controls in force, who was told, who accepted the residual risk |
 | FIN-03 | Set or change a detection threshold or filtering criterion | financial-crime-model-risk.md | prior/new value, detection impact, both-side samples, approver, rollback value |
 | FIN-04 | Choose metrics or labels for a rare-event decision system | financial-crime-model-risk.md | base-rate-valid metrics, cost-weighted point with owner, versioned labels |
 | FIN-05 | Release or monitor a model facing an adapting adversary | financial-crime-model-risk.md | outcome-alerting drift monitors, probing controls, pre-approved fast path |
@@ -79,7 +79,7 @@ Required output is routing shorthand; where the module body also states it, the 
 | EVL-01 | Repeated failures appear in trajectories | continuous-improvement.md | cluster with evidence, earliest failing layer, counterexample, scope, owner |
 | EVL-02 | Improve official agent behavior | continuous-improvement.md | medium matched to cause, smallest reversible change, activation test, rollback |
 | DBG-01 | System fails or underperforms | debugging-playbooks.md | check that failed on the symptom first, candidate causes, regression case |
-| ART-01 | Formal engineering artifact is required | engineering-artifacts.md | selected artifact with every template section filled |
+| ART-01 | Formal engineering artifact is required | engineering-artifacts.md | template named, every one of its sections filled or marked NA, named owner |
 | COV-01 | Exact source/technique lookup or source-pack extension is requested | source-extension.md | author/title, version, artifact SHA-256, locator, fidelity class, load status |
 
 Do not copy entire book summaries into task context.

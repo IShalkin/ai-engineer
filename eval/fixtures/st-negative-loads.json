@@ -1,0 +1,8 @@
+{
+  "primary": "p",
+  "modules": [
+    "data-rag-search.md"
+  ],
+  "boundary_ids": [],
+  "mode": "build"
+}

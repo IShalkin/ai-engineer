@@ -1,0 +1,32 @@
+[
+  {
+    "primary": "p",
+    "modules": [],
+    "boundary_ids": [],
+    "mode": "build"
+  },
+  {
+    "primary": "wrong",
+    "modules": [],
+    "boundary_ids": [],
+    "mode": "build"
+  },
+  {
+    "primary": "p",
+    "modules": [],
+    "boundary_ids": [],
+    "mode": "build"
+  },
+  {
+    "primary": "wrong",
+    "modules": [],
+    "boundary_ids": [],
+    "mode": "build"
+  },
+  {
+    "primary": "p",
+    "modules": [],
+    "boundary_ids": [],
+    "mode": "build"
+  }
+]

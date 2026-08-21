@@ -1,6 +1,6 @@
 # Fraud, Adverse Action, and Model Risk Guardrails
 
-This module is canonical for the model-risk framework, detection-system design, adverse-action explainability, and agent authority controls, including where it restates a control also stated in [financial-crime-model-risk.md](financial-crime-model-risk.md), which owns the BSA/AML, sanctions, and credit-decisioning specifics: the model-classification determination, threshold governance under the FFIEC manual, regulator-set fraud-rate metrics, CDD/KYC evidence and staleness, and SAR clocks and retention.
+This module is canonical for the model-risk framework, detection-system design, adverse-action explainability, and agent authority controls, including where it restates a control also stated in [financial-crime-model-risk.md](financial-crime-model-risk.md), which owns the BSA/AML, sanctions, and credit-decisioning specifics: the model-classification determination, regulator-set fraud-rate metrics, and CDD/KYC evidence and staleness. Threshold governance and SAR clocks and retention are stated in full here, at FRD-02.6 and FRD-03.7.
 
 Engineering controls for AI that detects fraud or financial crime, or that takes any decision going against a person. These controls help an accountable owner discharge an obligation that owner already holds; nothing here is legal advice and the obligation never transfers to engineering.
 

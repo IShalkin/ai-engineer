@@ -212,23 +212,55 @@ METRICS = (
 GOOD_IS_TRUE = {"primary_accuracy", "boundary_recall", "module_recall", "mode_accuracy"}
 
 
-def run(cases, provider, n):
-    """-> (per_case, errors). per_case[i] = {id, fractions: {metric: frac|None}}."""
+def run(cases, provider, n, jobs=1):
+    """-> (per_case, errors). per_case[i] = {id, fractions: {metric: frac|None}}.
+
+    `jobs` runs (case, repeat) pairs concurrently. Every provider call is independent by
+    contract -- one process per call, request on stdin -- so concurrency changes only how
+    long the run takes. It must not change what the run says, which is why results are
+    collected into a keyed table and assembled in case order afterwards rather than
+    appended as they land; the selftest asserts jobs=1 and jobs=4 agree.
+
+    Concurrency is bounded by whatever the provider talks to, not by this harness. Too
+    many jobs against a rate-limited endpoint turns into throttling that reads as model
+    slowness, so this stays an explicit operator choice with a default of 1.
+    """
+    tasks = [(ci, case, r) for ci, case in enumerate(cases) for r in range(n)]
+    scored = {}
+    failed = {}
+
+    def one(task):
+        ci, case, r = task
+        try:
+            return ci, r, score_once(case, provider(case["request"], case["id"], r)), None
+        except HarnessError as exc:
+            return ci, r, None, str(exc)
+
+    if jobs > 1:
+        from concurrent.futures import ThreadPoolExecutor
+
+        with ThreadPoolExecutor(max_workers=jobs) as pool:
+            outcomes = list(pool.map(one, tasks))
+    else:
+        outcomes = [one(t) for t in tasks]
+
+    for ci, r, score, error in outcomes:
+        if error is None:
+            scored[(ci, r)] = score
+        else:
+            failed[(ci, r)] = error
+
     per_case, errors = [], []
-    for case in cases:
-        runs = []
+    for ci, case in enumerate(cases):
         for r in range(n):
-            try:
-                resp = provider(case["request"], case["id"], r)
-            except HarnessError as exc:
-                errors.append({"id": case["id"], "repeat": r, "error": str(exc)})
-                continue
-            runs.append(score_once(case, resp))
+            if (ci, r) in failed:
+                errors.append({"id": case["id"], "repeat": r, "error": failed[(ci, r)]})
+        runs = [scored[(ci, r)] for r in range(n) if (ci, r) in scored]
         if not runs:
             continue  # every repeat errored; already recorded as a harness error
         fractions = {}
         for m in METRICS:
-            vals = [r[m] for r in runs if r[m] is not None]
+            vals = [x[m] for x in runs if x[m] is not None]
             fractions[m] = (sum(vals) / len(vals)) if vals else None
         per_case.append({"id": case["id"], "n_scored": len(runs), "fractions": fractions})
     return per_case, errors
@@ -275,6 +307,7 @@ def provenance(args):
         "model": args.model,
         "effort": args.effort,
         "n": args.n,
+        "jobs": args.jobs,
         "date": args.date,  # caller-supplied; the harness never reads a clock
         "sha256": {rel: sha256_file(rel) for rel in HASHED_FILES},
     }
@@ -445,6 +478,13 @@ def build_parser():
     ap.add_argument("--provider", choices=("fixture", "command"), default="fixture")
     ap.add_argument("--command", help="argv of the external provider; request on stdin, JSON on stdout")
     ap.add_argument("-n", type=int, default=1, help="repeats per case")
+    ap.add_argument(
+        "--jobs",
+        type=int,
+        default=1,
+        help="run this many (case, repeat) pairs concurrently; results are identical to "
+        "--jobs 1, only faster. Bound it by what your provider tolerates.",
+    )
     ap.add_argument("--date", help="run date, ISO (required; the harness never reads a clock)")
     ap.add_argument("--model", default="unspecified", help="recorded verbatim")
     ap.add_argument("--effort", default="unspecified", help="recorded verbatim")
@@ -479,7 +519,7 @@ def main(argv=None):
             provider = make_fixture_provider(args.fixtures)
         prov = provenance(args)
         cases = load_cases(args.cases)
-        per_case, errors = run(cases, provider, args.n)
+        per_case, errors = run(cases, provider, args.n, args.jobs)
     except HarnessError as exc:
         print("HARNESS ERROR: %s" % exc, file=sys.stderr)
         return 2
@@ -521,21 +561,21 @@ def selftest():
     # 1. missing one expected boundary ID -> 0, not partial credit
     f = frac("st-boundary-partial", "boundary_recall", expect_boundary_ids=["b1", "b2"])
     assert f == 0.0, f
-    print("  ok  1/10  one of two expected boundaries fired -> boundary_recall 0.0 (no partial credit)")
+    print("  ok  1/11  one of two expected boundaries fired -> boundary_recall 0.0 (no partial credit)")
 
     # 2. unexpected boundary raises false_boundary_rate, recall stays 1.0
     kw = {"expect_boundary_ids": ["b1"]}
     r = frac("st-boundary-extra", "boundary_recall", **kw)
     fb = frac("st-boundary-extra", "false_boundary_rate", **kw)
     assert (r, fb) == (1.0, 1.0), (r, fb)
-    print("  ok  2/10  unexpected boundary -> false_boundary_rate 1.0, boundary_recall still 1.0")
+    print("  ok  2/11  unexpected boundary -> false_boundary_rate 1.0, boundary_recall still 1.0")
 
     # 3. negative case that loads a module is caught
     v = frac("st-negative-loads", "negative_violation", negative=True)
     assert v == 1.0, v
     clean = frac("st-clean", "negative_violation", negative=True)
     assert clean == 0.0, clean
-    print("  ok  3/10  negative case loading one module -> negative_violation 1.0 (clean case 0.0)")
+    print("  ok  3/11  negative case loading one module -> negative_violation 1.0 (clean case 0.0)")
 
     # 4. three of five repeats -> 0.6 and lands in UNSTABLE
     c = case("st-flaky")
@@ -546,7 +586,7 @@ def selftest():
     uns = unstable(pc)
     assert len(uns) == 1 and uns[0]["id"] == "st-flaky", uns
     assert abs(uns[0]["metrics"]["primary_accuracy"] - 0.6) < 1e-9
-    print("  ok  4/10  3 of 5 repeats pass -> pass fraction 0.6, case listed in UNSTABLE")
+    print("  ok  4/11  3 of 5 repeats pass -> pass fraction 0.6, case listed in UNSTABLE")
 
     # 5. malformed provider output is a harness error, not a scoring failure
     pc, errs = run([case("st-malformed"), case("st-missing-fixture")], provider, 1)
@@ -556,19 +596,19 @@ def selftest():
     assert "missing fixture" in errs[1]["error"], errs[1]
     agg = aggregate(pc)
     assert all(agg[m]["value"] is None for m in METRICS), agg
-    print("  ok  5/10  malformed stdout + missing fixture -> 2 harness errors, 0 scored cases")
+    print("  ok  5/11  malformed stdout + missing fixture -> 2 harness errors, 0 scored cases")
 
     # 6. loading nothing while naming the right IDs must not score a perfect card
     mr = frac("st-no-modules", "module_recall", expect_modules=[real])
     ok = frac("st-overload", "module_recall", expect_modules=[real])
     assert (mr, ok) == (0.0, 1.0), (mr, ok)
-    print("  ok  6/10  correct ids but no module loaded -> module_recall 0.0")
+    print("  ok  6/11  correct ids but no module loaded -> module_recall 0.0")
 
     # 7. a module name that is not a real file is unscoreable, not a clean answer
     pc, errs = run([case("st-unknown-module", forbid_modules=["context-prompt-engineering.md"])], provider, 1)
     assert pc == [] and len(errs) == 1, (pc, errs)
     assert "do not exist" in errs[0]["error"], errs[0]
-    print("  ok  7/10  module name that is not a real file -> harness error, not forbidden_load_rate 0.0")
+    print("  ok  7/11  module name that is not a real file -> harness error, not forbidden_load_rate 0.0")
 
     # 8. a case missing an expectation key is a harness error, not a silently unpassable case
     with tempfile.TemporaryDirectory() as td:
@@ -580,7 +620,7 @@ def selftest():
             raise AssertionError("missing expectation key was accepted")
         except HarnessError as exc:
             assert "expect_modules" in str(exc), exc
-    print("  ok  8/10  case line missing an expectation key -> harness error")
+    print("  ok  8/11  case line missing an expectation key -> harness error")
 
     # 9. IDs and modes are labels: a real reply capitalises the mode and punctuates the ID
     typo = score_once(
@@ -599,7 +639,7 @@ def selftest():
          "modules": ["Architecture-Decision-Engine.md"]},
     )
     assert near["module_recall"] is False, near
-    print("  ok  9/10  ID/mode compared as labels; module filenames still compared exactly")
+    print("  ok  9/11  ID/mode compared as labels; module filenames still compared exactly")
 
     # 10. a negative case is scored on what it loads, not on whether it named an ID
     neg = score_once(
@@ -609,7 +649,19 @@ def selftest():
     )
     assert neg["primary_accuracy"] is None, neg
     assert neg["negative_violation"] is False and neg["mode_accuracy"], neg
-    print("  ok 10/10  negative case: primary_accuracy not applicable, negative_violation scores it")
+    print("  ok 10/11  negative case: primary_accuracy not applicable, negative_violation scores it")
+
+    # 11. --jobs must change only the wall clock. A concurrent run that appends results as
+    # they land reorders per_case and reassigns repeats between cases; both produce a report
+    # that looks fine and attributes scores to the wrong case.
+    many = [case("st-flaky"), case("st-clean"), case("st-boundary-partial",
+            expect_boundary_ids=["ARC-02", "HRN-02"])]
+    seq_pc, seq_err = run(many, provider, 3, 1)
+    par_pc, par_err = run(many, provider, 3, 4)
+    assert seq_pc == par_pc, (seq_pc, par_pc)
+    assert seq_err == par_err, (seq_err, par_err)
+    assert [c["id"] for c in par_pc] == [c["id"] for c in many], par_pc
+    print("  ok 11/11  --jobs 4 returns byte-identical per-case results and order as --jobs 1")
 
     # --check-cases must reject the two defects that reached the shipped corpus once already
     with tempfile.TemporaryDirectory() as td:

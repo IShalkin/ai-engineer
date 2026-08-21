@@ -28,9 +28,10 @@ to this repository):
                           Keep it outside this repository.
     EVAL_TIMEOUT          optional per-case seconds, default 600
     EVAL_KEEP_TRANSCRIPT  optional directory; each run's raw stream-json is written
-                          there as <pid>-<n>.jsonl for after-the-fact inspection
+                          there as <sha1-of-request>.jsonl, which joins to cases.jsonl
 """
 
+import hashlib
 import json
 import os
 import shutil
@@ -251,7 +252,12 @@ def main():
         keep = os.environ.get("EVAL_KEEP_TRANSCRIPT")
         if keep:
             os.makedirs(keep, exist_ok=True)
-            path = os.path.join(keep, "%d-%d.jsonl" % (os.getpid(), id(request) % 10000))
+            # Named by a digest of the request, because the harness contract hands this
+            # runner the request and nothing else. A transcript named after the process id
+            # cannot be tied back to a case, which is exactly what you need it for when a
+            # metric drops; the digest joins to `cases.jsonl` on the request text.
+            digest = hashlib.sha1(request.encode("utf-8")).hexdigest()[:12]
+            path = os.path.join(keep, "%s.jsonl" % digest)
             with open(path, "w", encoding="utf-8") as fh:
                 fh.write(proc.stdout)
             log("transcript: %s" % path)

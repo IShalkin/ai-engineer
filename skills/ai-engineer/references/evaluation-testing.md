@@ -43,6 +43,12 @@ Use [MLD-01](ml-system-design-lifecycle.md) for the complete design sequence and
 
 Create representative normal, edge, adversarial and policy cases. Preserve raw inputs, expected evidence, acceptable outcome/rubric, forbidden behavior, metadata and dataset version. Split development and release sets. Add production failures only after review and deduplication; avoid training graders on the hidden release set.
 
+For the normal bucket specifically, simulating a user is an alternative to writing cases by hand: define personas with role, goal, starting context and a turn budget, run them against the system, and keep the transcripts. Multi-turn traces produced this way carry the interruptions, restatements and partial answers a hand-written case often omits. A transcript is an input, not a case: it becomes one only when a human sets its acceptable outcome and forbidden behavior, because the system's own output is not a label and scoring against it measures agreement with the generator (JDG-01). Generated cases inherit the generator's distribution, so record per-case provenance and hold them in the development split; they reach the frozen release set only by reviewed addition (JDG-04). The mechanism fills the normal bucket only: a simulated user of any temperament cannot produce a case its author did not conceive, so personas do not fill the edge, adversarial or policy strata, and a persona set built on the system's own assumptions inherits its blind spots. Version the persona set with the dataset; changing a persona changes the cases. `ENGINEERING_SYNTHESIS`
+
+The adversarial and policy strata need an external source for the same reason. Published agentic-attack corpora carry cases nobody on the build team thought of - the OWASP FinBot CTF in [current-standards.md](current-standards.md) is one, with classes for recon, policy bypass, data exfiltration, destructive action and remote code execution. Import the attack pattern, not the case: a published case is contaminated by construction, so restate it against this system's own tools, data and authority boundaries, and record where it came from.
+
+Its case format is worth copying whatever the source. One declarative file per case, carrying: a stable identifier; the objective in prose; success criteria written as conditions on system state; category and difficulty; labels against every external framework the case maps to, so a category revision is a diff rather than an audit; prerequisites naming the cases that must pass first, which makes the corpus ordered instead of a bag; and the name plus configuration of the check that decides the case, held separately from the case itself so one check serves many cases. A case in that shape is reviewable by someone who did not write it. Two further rules earn their place: where a case can also be passed by a generic attack that would pass every case, say so in the case and discount that path, or the corpus measures how well the generic attack works and stops distinguishing the specific defect each case was built for; and keep the graduated hints, if any, as data in the case, because how much scaffolding a system needs before it succeeds is itself a measurement. `ENGINEERING_SYNTHESIS`
+
 ## EVA-02 — Three-Level Agent Evaluation
 
 For every agent case score separately:
@@ -52,6 +58,8 @@ For every agent case score separately:
 3. artifact quality against a task-specific rubric.
 
 Then record latency, cost, variance, retries, escalation, and trace completeness. A scalar aggregate may support ranking but never replaces the diagnostic dimensions.
+
+Write the outcome criterion as a condition on system state wherever the environment can be observed, not as a condition on the answer text: not "the reply contains X" but "this record moved from rejected to active, and reached it through more than one transition". A string match passes a system that narrates the right thing while doing the wrong one, fails a system that does the right thing in unexpected words, and cannot see a multi-step path where no single step looks wrong. Two checks are involved and they are not the same: a per-case check answers whether this case's condition held in this run, and an aggregate check answers a question over the whole history - whether the behavior recurred, across how many runs, since when - which a per-run assertion cannot express. Give both the same result shape: the boolean, the evidence that decided it as a retained audit trail, and a confidence that is 1.0 for a deterministic condition and lower only where a pattern match or a judge was involved. A reader who cannot tell which kind of check produced a verdict cannot tell how much the verdict is worth. `ENGINEERING_SYNTHESIS`
 
 ### Metrics by layer
 
@@ -97,6 +105,8 @@ Test:
 - checkpoint, pause, edit, reject and resume;
 - budget and termination enforcement;
 - memory poisoning and stale context;
+- cross-tenant isolation: the same case run as two tenants, leaking in neither direction;
+- inter-agent protocol spoofing and replay: a forged or re-sent message from a peer agent is rejected, not acted on;
 - conflicting agent results and arbitration;
 - abstention and human escalation.
 

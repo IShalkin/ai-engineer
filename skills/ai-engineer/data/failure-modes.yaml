@@ -1,0 +1,1214 @@
+# Agentic failure-mode corpus
+#
+# Keyed on mechanism, not on source. One record is one distinct causal phenomenon;
+# catalogue entries map INTO records, many-to-one, and appear as `sources[].name`.
+# A record earns its place only by routing to a different control function, a
+# different signal class, or a different test than every record already here —
+# that reason is written in `discriminator` so the gate can be audited later.
+#
+# A field is sourced or absent. Base likelihood and severity are deliberately not
+# carried. One source does state them — the riskSpec prototype — and describes them
+# as heuristic constants that were never empirically calibrated, so carrying them
+# would import a number nobody can defend. That is the reason, not an absence of
+# sources.
+#
+# `runtime_signal` answers exactly one question, and all 27 records were re-derived
+# against it on 2026-08-22 after a first pass applied it at three different
+# thresholds: AT THE MOMENT THE MECHANISM PRODUCES ITS EFFECT, DOES THE FAILING RUN
+# DIFFER OBSERVABLY FROM A CORRECT ONE?
+#   direct   — it differs within the run itself. Automation detects it from the run.
+#   indirect — it does not differ in itself, only against something outside the run:
+#              a register, a baseline, an approved hash, a second log, a held-out
+#              measure. Automation detects it ONLY IF that comparand exists and is
+#              maintained, so every `indirect` record names its comparand in
+#              `signal_note`. An `indirect` mechanism whose comparand was never built
+#              is undetected while reading as monitored — that is the finding to look
+#              for, and it is the field's main use.
+#   none     — no comparand exists for the run even in principle, because the failing
+#              behaviour is identical to correct behaviour and the difference is a
+#              judgement held outside any system.
+# The re-derivation moved six records out of `none` and left one in. Read that as a
+# correction, not a downgrade: the earlier values conflated "no signal" with "no
+# control has been built", which is the mistake this field exists to expose. `admitted_by` is carried so the
+# corpus is queryable from the design side: which capability admits which
+# mechanism, asked before the system exists.
+#
+# Acceptance test for the whole file: a reader who has not met it must be able to
+# re-derive every record from `sources` alone. If they cannot, the record has
+# failed regardless of whether it is true. One field is exempt and must be read as
+# `ENGINEERING_SYNTHESIS`: `runtime_signal` is author judgement, no source states an
+# observability property per mechanism, and the classification is provisional
+# pending re-derivation against a single written rule.
+#
+# Known limit of the gate: it removes restatement, not granularity. Where the
+# source catalogues carve finely this corpus inherits that carving, and a second
+# pass with all clusters visible together may merge records that look distinct
+# cluster by cluster. Do that pass before treating the count as settled.
+#
+# Control-function codes are AIUC-1's, registered in references/current-standards.md:
+#   PREV prevent · SCOPE constrain scope · GATE human gate · DETECT detect and trace
+#   VALID validate and test · GOVERN policy and governance · ISOLATE isolate and contain
+#   DISCLOSE disclose and calibrate
+
+version: 1.0.0
+status: second-pass-done-classification-provisional
+derived: 2026-08-22
+clusters_done: [memory-and-context, tools-and-definitions, identity-and-delegation,
+  inter-agent-and-systemic, human-oversight, governance-and-accountability,
+  operational-lifecycle, reasoning-and-execution]
+second_pass:
+  done: 2026-08-22
+  merge_check: >-
+    All records compared against each other with clusters visible together. One merge:
+    FM-TOOL-OVERSCOPED and FM-STANDING-AUTHORITY were one mechanism at two loci and are now
+    FM-EXCESS-CAPABILITY. Five near-misses examined and kept apart, each now naming its
+    neighbour in `discriminator`: state-as-identity against excess capability (timing versus
+    width), orphaned agent against post-compromise authority (purpose versus adversary),
+    shadow agent against unapproved composition (an agent entering the estate versus a
+    component entering an agent), unvalidated change against definition drift (own release
+    process versus a publisher's), error propagation against unsupported assertion (a wrong
+    conclusion travelling versus one being made).
+  discriminators_fixed: [FM-INERT-SURFACE-EXECUTES, FM-UNBOUNDED-DELEGATION, FM-AGENT-COLLUSION]
+  open: >-
+    Wired into SEC-01 on 2026-08-22 and reviewed adversarially the same day. The review stands
+    against the corpus, not the wiring: `runtime_signal` was applied at inconsistent
+    thresholds, four records classed `none` carry an automatable `test`, and the value is
+    author judgement rather than a sourced property. Until the field is re-derived against a
+    single written rule it is provisional and SEC-01 treats it as a prompt, not a verdict.
+    Nine records also restate prose already in security-governance.md; the dedup gate is
+    scoped to this file and cannot see the module it is wired into.
+
+records:
+
+  # ---- memory and context -------------------------------------------------
+
+  - id: FM-CORPUS-POISONING
+    cluster: memory-and-context
+    mechanism: >-
+      Attacker-controlled content enters a retrieval corpus, memory store or index and is
+      later returned as evidence to a step that treats retrieved material as information
+      to weigh. The agent reasons from it correctly; the corpus is what is wrong.
+    discriminator: >-
+      Distinct from FM-INSTRUCTION-STATE because the poisoned content is consumed as
+      evidence, not as authority. It is weighed against other evidence, so grounding and
+      provenance controls apply and can work. Distinct from prompt injection because the
+      write and the read are separated in time and often in actor.
+    admitted_by:
+      - a retrieval corpus, index or episodic store the agent reads at run time
+      - any write path into that store that is not the same trust level as the reader
+      - shared or cross-tenant corpora, which widen who the writer can be
+    runtime_signal: indirect
+    signal_note: >-
+      Comparand: the provenance record of the retrieved span — which source it came from, written by whom, when.
+      The retrieval is observable and the returned span can be traced to a source record,
+      so the mechanism is detectable at read time through provenance and integrity checks.
+      The poisoning write itself may be long past and is not observable from the run.
+    control_functions: [VALID, DETECT, ISOLATE, PREV]
+    test: >-
+      Plant a known-false record in a copy of the corpus, then run a case whose answer
+      depends on it; the run must either not retrieve it or must surface its provenance.
+    sources:
+      - catalogue: OWASP Top 10 for Agentic Applications
+        edition: "2026"
+        id: ASI06
+        name: Memory & Context Injection
+        claim: >-
+          Adversaries poison RAG stores, memory, or context windows to plant false
+          knowledge, bias logic, or trigger unsafe behaviors across sessions or agents.
+        note: >-
+          The project's own prose and its FinBot challenge labels call the same entry
+          "Memory and Context Poisoning". Both spellings are OWASP usage; quote whichever
+          the cited artifact uses.
+      - catalogue: OWASP GenAI Security Project, Agentic Top 10 launch
+        edition: 10 December 2025
+        id: ASI06
+        name: anchor incident
+        claim: The authors anchor ASI06 to the Gemini memory attack.
+
+  - id: FM-INSTRUCTION-STATE
+    cluster: memory-and-context
+    mechanism: >-
+      Attacker-controlled content is written into durable state that the runtime reads back
+      as instruction rather than as evidence — a memory file loaded into the system prompt,
+      a hook that runs before every turn, an agent configuration file. The agent does not
+      weigh it; it obeys it, and it keeps obeying across sessions, projects and restarts.
+    discriminator: >-
+      Distinct from FM-CORPUS-POISONING because the content is consumed with authority, so
+      grounding, provenance and evidence-weighing controls do not apply to it at all — the
+      agent is not evaluating a claim, it is following a rule. This is also why the
+      disclosed vendor fix was to stop loading memory into the system prompt: the remedy
+      was to demote the content from instruction to data, not to validate it better.
+    admitted_by:
+      - durable state read back as instruction — persistent memory, system-prompt injection
+        from a file, per-project or per-user config the runtime loads
+      - a pre-turn or pre-action hook whose output enters context
+      - any capability that can write to those surfaces, including an approved dependency
+        install, a package lifecycle script, or the agent's own file-write tool
+      - auto-approval of tool calls, which removes the one human gate the known chain had
+    runtime_signal: indirect
+    signal_note: >-
+      Comparand: the approved content or hash of each instruction surface. The *behaviour*
+      carries no signal — an agent obeying a planted instruction is identical in trace, tool
+      calls and confidence to one obeying a legitimate instruction — but the *write* is
+      detectable against the approved state, provided the surfaces are enumerated and
+      integrity-checked at load. Nothing detects it if that check is absent, which is the
+      condition to look for rather than the mechanism itself.
+    control_functions: [PREV, ISOLATE, VALID, GOVERN]
+    test: >-
+      Write a benign marker instruction into each instruction surface out of band, then run
+      an unrelated case; the marker must not influence the run, or the surface must be
+      shown to be integrity-checked at load. Assert the surfaces by enumeration, not by
+      sampling — an unlisted surface is an untested one.
+    sources:
+      - catalogue: Cisco, MemoryTrap disclosure
+        edition: 1 April 2026
+        name: persistent memory compromise in a coding agent
+        claim: >-
+          A payload delivered through an approved dependency install wrote to per-project
+          memory files, the global hook that runs before every prompt, and a shell alias
+          that silently re-enabled memory loading, persisting across projects, sessions and
+          reboots; the evaluated build loaded the first 200 lines of memory files into the
+          system prompt, where they were treated as high-authority instruction.
+      - catalogue: OWASP Top 10 for Agentic Applications
+        edition: "2026"
+        id: ASI06
+        name: Memory & Context Injection
+        claim: >-
+          The "across sessions or agents" clause of ASI06 covers this mechanism, but ASI06
+          as written does not separate authority from evidence, so this record is narrower
+          than the catalogue entry it maps to.
+      - catalogue: Microsoft, Taxonomy of Failure Modes in Agentic AI Systems
+        edition: v2.0, announced 4 June 2026
+        name: Session Context Contamination
+        claim: Listed among the seven categories added in v2.0.
+        note: >-
+          Assigned here only in part. The name does not say whether contamination is
+          bounded to a session or survives it, and the announcement does not resolve it;
+          read the whitepaper before treating this mapping as settled.
+
+  # ---- tools and definitions ----------------------------------------------
+
+  - id: FM-TOOL-MISDESCRIBED
+    cluster: tools-and-definitions
+    mechanism: >-
+      A tool does something other than what its description and schema declare. The agent
+      selects it on the strength of the description and is right to; the declaration is
+      the lie.
+    discriminator: >-
+      Distinct from FM-DEFINITION-DRIFT because nothing changed — the description was never
+      true, so pinning a hash detects nothing. Distinct from FM-EXCESS-CAPABILITY because the
+      grant may be correctly narrow and the tool still misbehaves inside it.
+    admitted_by:
+      - any tool, skill or MCP server whose description the agent reads to choose it
+      - third-party or registry-sourced tools, where the describer is not the operator
+      - tool descriptions and schema field text, which are model-visible instruction surface
+    runtime_signal: direct
+    signal_note: >-
+      Observable by comparing declared behaviour against actual effects — a network write
+      from a tool that claims to read locally is visible in the trace if anyone compares.
+      The signal exists; it is usually not collected.
+    control_functions: [VALID, DETECT, PREV]
+    test: >-
+      Exercise each tool against its own declaration: assert the effect class it produces
+      is a subset of what it advertises, and fail the tool on any effect outside it.
+    sources:
+      - catalogue: OWASP Agentic Skills Top 10
+        edition: v1.0, 2026
+        id: AST01
+        name: Malicious Skills
+        claim: Skills whose packaged behaviour is hostile to the user that installs them.
+      - catalogue: OWASP Agentic Skills Top 10
+        edition: v1.0, 2026
+        id: AST04
+        name: Insecure Metadata
+        claim: Skill metadata as an attack surface.
+      - catalogue: OWASP GenAI Security Project
+        edition: A Practical Guide for Secure MCP Server Development v1.0, February 2026
+        name: description-versus-behaviour verification
+        claim: >-
+          Prove the description matches behaviour and flag any tool that acts outside what
+          it advertises; pinning detects a definition that changed, not one that was never
+          true.
+
+  - id: FM-EXCESS-CAPABILITY
+    cluster: tools-and-definitions
+    merged_from: ["FM-TOOL-OVERSCOPED (deleted)", "FM-STANDING-AUTHORITY (deleted)"]
+    merged_note: >-
+      Merged in the second pass. Held separately while working tool and identity clusters
+      apart, they turned out to be one mechanism at two loci: capability exceeding need. The
+      loci differ in where you look, not in what has gone wrong or how it is fixed.
+    mechanism: >-
+      The agent is permitted more than the task requires — at the tool grant, at the
+      principal, or at both. Everything behaves exactly as described. Any steering, by
+      injection, by a hijacked goal or by ordinary error, then reaches as far as the grant
+      allows rather than as far as the task needed.
+    loci:
+      - tool grant — the capability class a single tool exposes
+      - principal scope — what the agent's own identity can reach without any tool
+    discriminator: >-
+      Distinct from FM-TOOL-MISDESCRIBED because every declaration is honest; the grant is
+      wrong, and verifying an honest tool never narrows it. Distinct from
+      FM-STATE-AS-IDENTITY, which is about when authorisation is re-checked rather than how
+      wide it is. Not a record for "agent steered into misusing a tool" — that steering is
+      prompt injection or goal hijack, already carried as abuse cases.
+    admitted_by:
+      - a tool granted a capability class broader than the task, such as a shell where a
+        named command would do, or write where read suffices
+      - a service account or long-lived credential issued to the agent rather than per task
+      - platform-managed identities whose default scope the operator did not choose
+      - roles inherited from a deployment environment or a parent project
+      - credentials or scopes attached to the tool or principal rather than to the request
+    runtime_signal: indirect
+    signal_note: >-
+      Comparand: a declared task scope. The call, its arguments and the acting identity are
+      all in the run, but "exceeded need" is only decidable against a statement of the need,
+      and that statement is what teams almost never write down. Absent it there is nothing to
+      compare and the widest permitted action reads as authorised, because it is.
+    control_functions: [SCOPE, PREV, GATE, GOVERN]
+    test: >-
+      At each locus, attempt the widest action the grant permits and the narrowest the task
+      requires; the difference is unearned capability and must be removed or gated. For the
+      principal, enumerate what the identity can reach independently of any tool — the paths
+      that do not run through a tool are the ones a tool-by-tool review misses.
+    sources:
+      - catalogue: OWASP Top 10 for Agentic Applications
+        edition: "2026"
+        id: ASI02
+        name: Tool Misuse & Exploitation
+        claim: >-
+          Agents misuse legitimate tools using prompt manipulation or privilege control,
+          resulting in data exfiltration, unsafe operations, output manipulation, or
+          workflow hijacking.
+        note: >-
+          Mapped in part only. The steering half of ASI02 is prompt injection and goal
+          hijack, already covered; the scoping half is this record.
+      - catalogue: OWASP Agentic Skills Top 10
+        edition: v1.0, 2026
+        id: AST03
+        name: Over-Privileged Skills
+        claim: Skills holding more privilege than their function requires.
+      - catalogue: OWASP Top 10 for Agentic Applications
+        edition: "2026"
+        id: ASI03
+        name: Identity & Privilege Abuse
+        claim: >-
+          Weak scoping and dynamic delegation allow privilege escalation and cross-agent
+          impersonation through cached credentials, inherited roles, or unintended
+          delegated scopes.
+      - catalogue: OWASP GenAI exploit round-up
+        edition: Q1 2026, 14 April 2026
+        name: Vertex AI "double agent"
+        claim: >-
+          A deployed agent inherited excessive default permissions through a managed service
+          account and was used to extract credentials and reach resources in another project.
+      - catalogue: OWASP GenAI Security Project, Agentic Top 10 launch
+        edition: 10 December 2025
+        id: ASI02
+        name: anchor incident
+        claim: The authors anchor ASI02 to the Amazon Q incident.
+
+  - id: FM-DEFINITION-DRIFT
+    cluster: tools-and-definitions
+    mechanism: >-
+      A tool, skill or server definition is approved once and then changes — silently, or
+      at call time, or differently per caller — so the thing running is not the thing that
+      was reviewed.
+    discriminator: >-
+      Distinct from FM-TOOL-MISDESCRIBED, which is false at approval time and therefore
+      undetectable by re-comparison against the approved copy. Distinct from
+      FM-UNAPPROVED-COMPOSITION because the component itself was admitted legitimately; its
+      contents moved afterwards.
+    admitted_by:
+      - a definition fetched remotely at call time rather than pinned at approval
+      - auto-update of skills, plugins or servers without re-approval
+      - any definition source that can vary by date, caller or environment
+    runtime_signal: indirect
+    signal_note: >-
+      Comparand: the definition approved at review, held by hash. Re-verifying on every
+      listing detects the change; without that re-read there is no signal at all, since
+      nothing detects a change in something never looked at twice. This record is the clearest
+      case of the field's rule: the signal is a property of whether the comparand is
+      maintained, not of the mechanism.
+    control_functions: [VALID, PREV, GOVERN]
+    test: >-
+      Change a tool definition out of band after approval and run the flow; the change must
+      be detected and consent re-requested before the tool is usable.
+    sources:
+      - catalogue: OWASP Agentic Skills Top 10
+        edition: v1.0, 2026
+        id: AST07
+        name: Update Drift
+        claim: Skill behaviour changing across updates after review.
+      - catalogue: OWASP Top 10 for Agentic Applications
+        edition: "2026"
+        id: ASI04
+        name: Agentic Supply Chain Vulnerabilities
+        claim: >-
+          Dynamically loaded prompts, models, or connections propagate malicious logic at
+          runtime through dynamic dependencies and unverified sources.
+        note: Mapped in part; the admission half is FM-UNAPPROVED-COMPOSITION.
+
+  - id: FM-INERT-SURFACE-EXECUTES
+    cluster: tools-and-definitions
+    mechanism: >-
+      A surface treated as configuration or data turns out to be an execution path — a
+      config field that reaches an interpreter, a deserialized object that runs, a
+      generated string that becomes a shell command.
+    discriminator: >-
+      Distinct from FM-TOOL-MISDESCRIBED and FM-EXCESS-CAPABILITY, which both concern a
+      declared capability — honest or not, wide or narrow. Here nothing was declared as a
+      capability at all: a surface assumed inert is live, so the controls are isolation and
+      validation at the sink rather than tool verification or scoping.
+    admitted_by:
+      - configuration accepted from a user, a repository or a model and consumed by an
+        interpreter, template engine or deserializer
+      - any path where model output reaches a shell, eval, SQL, filesystem path or URL
+      - low-code or declarative orchestration where "settings" are executed
+    runtime_signal: direct
+    signal_note: >-
+      The execution is observable at the sink if the sink is instrumented; the assumption
+      that the surface was inert is usually why it is not.
+    control_functions: [PREV, ISOLATE, VALID]
+    test: >-
+      Submit an execution payload through every configuration and data field the agent
+      stack consumes; each must be rejected at the sink, not merely schema-valid.
+    sources:
+      - catalogue: OWASP Top 10 for Agentic Applications
+        edition: "2026"
+        id: ASI05
+        name: Unexpected Code Execution (RCE)
+        claim: >-
+          Unsafe code generation, agent deserialization, or shell execution triggered by
+          crafted prompts or poisoned inputs.
+      - catalogue: OWASP GenAI exploit round-up
+        edition: Q1 2026, 14 April 2026
+        name: Flowise CustomMCP RCE (CVE-2025-59528)
+        claim: >-
+          Unsafe handling of tool-configuration data allowed arbitrary JavaScript injection
+          and execution; actively exploited, with the report's own lesson that config
+          fields in AI systems can be code paths, not just settings.
+
+  - id: FM-UNAPPROVED-COMPOSITION
+    cluster: tools-and-definitions
+    mechanism: >-
+      A component that was never approved enters the running system — a tool, skill, MCP
+      server, sub-agent, model or retrieval source composed at run time from a registry, a
+      dependency, or another agent's advertisement.
+    discriminator: >-
+      Distinct from FM-DEFINITION-DRIFT, where an approved component's contents moved: here
+      admission itself never happened. The control is an allowlist and a composition
+      inventory, not re-verification of something already on the list.
+    admitted_by:
+      - runtime discovery of tools, servers or sub-agents from any registry or peer
+      - dependency installation performed during a session
+      - any capability that can add to the agent's tool set without a review step
+    runtime_signal: indirect
+    signal_note: >-
+      Comparand: the allowlist of approved components, and an inventory of what may compose rather than what did.
+      Observable only against an inventory of what may compose. A build-time inventory
+      describes a different system than the one running, so with one the mechanism is
+      invisible by construction.
+    control_functions: [PREV, GOVERN, ISOLATE, DETECT]
+    test: >-
+      Offer the agent an unlisted tool or server mid-run from a source it trusts; admission
+      must fail closed and be recorded.
+    sources:
+      - catalogue: OWASP Top 10 for Agentic Applications
+        edition: "2026"
+        id: ASI04
+        name: Agentic Supply Chain Vulnerabilities
+        claim: >-
+          Poisoned or impersonated tools, models, or connections to MCPs or external agents
+          compromise agents through dynamic dependencies and unverified sources.
+      - catalogue: OWASP Agentic Skills Top 10
+        edition: v1.0, 2026
+        id: AST02
+        name: Supply Chain Compromise
+        claim: Compromise entering through the skill distribution path.
+      - catalogue: OWASP GenAI Security Project, Agentic Top 10 launch
+        edition: 10 December 2025
+        id: ASI04
+        name: anchor incident
+        claim: The authors anchor ASI04 to the GitHub MCP exploit.
+
+  # ---- identity and delegation --------------------------------------------
+
+  - id: FM-AUTHORITY-LOST-AT-HOP
+    cluster: identity-and-delegation
+    mechanism: >-
+      An intermediary forwards the caller's credential onward instead of exchanging it, so
+      it acts with the caller's privileges on an instruction the caller never gave, and the
+      audit records the intermediary rather than the requester.
+    discriminator: >-
+      Distinct from FM-EXCESS-CAPABILITY because the scope may be correct — what is wrong
+      is attribution. The fix is a token exchange preserving both identities, which does
+      nothing about width, and narrowing scope does nothing about attribution.
+    admitted_by:
+      - any hop where one component calls another on a user's behalf, including MCP servers,
+        gateways and sub-agents
+      - credential forwarding as the integration default
+    runtime_signal: indirect
+    signal_note: >-
+      Comparand: the originating request log, against what the downstream audit trail attributes.
+      Detectable only by comparing what the audit trail attributes against who actually
+      requested the action. From inside a single call the trail looks consistent.
+    control_functions: [PREV, DETECT, VALID]
+    test: >-
+      Drive an action through the intermediary and assert the audit record names both the
+      agent and the originating principal; a record naming only the intermediary fails.
+    sources:
+      - catalogue: OWASP GenAI Security Project
+        edition: A Practical Guide for Secure MCP Server Development v1.0, February 2026
+        name: token passthrough and confused deputy
+        claim: >-
+          Forwarding the caller's token makes the intermediary a confused deputy; use a
+          token issued to the intermediary or an explicit on-behalf-of exchange keeping both
+          identities, citing RFC 8693.
+      - catalogue: OWASP GenAI Security Project
+        edition: State of Agentic AI Security and Governance v2.01, June 2026
+        name: chain, never forward
+        claim: >-
+          A downstream call should carry structured claims naming both the agent and the
+          upstream principal so a tool can separate the agent's own capability from
+          delegated authority.
+
+  - id: FM-STATE-AS-IDENTITY
+    cluster: identity-and-delegation
+    mechanism: >-
+      A session, stream or queue entry is treated as evidence of authorisation, so an action
+      proceeds because the context still exists rather than because the principal is still
+      permitted.
+    discriminator: >-
+      Distinct from FM-AUTHORITY-LOST-AT-HOP, which is about propagation across components;
+      this is failure to re-check within a continuing one. Marginal by the gate's own
+      standard — it is closer to a defect class than a mechanism — and kept only because its
+      test differs: replay after revocation, which no other record here exercises.
+    admitted_by:
+      - long-lived sessions, streams or work queues that outlive an authorisation decision
+      - authorisation evaluated at connection rather than per sensitive action
+    runtime_signal: indirect
+    signal_note: >-
+      Comparand: the principal's current authorisation state at the moment of the action. The
+      action looks identical whether or not the authorisation still holds; only a re-check
+      against live authorisation separates them, and the defect is precisely that the re-check
+      is not made.
+    control_functions: [PREV, VALID]
+    test: >-
+      Revoke a principal's authorisation mid-session and attempt a sensitive action on the
+      existing session; it must fail.
+    sources:
+      - catalogue: OWASP GenAI Security Project
+        edition: A Practical Guide for Secure MCP Server Development v1.0, February 2026
+        name: session identifier is state, not identity
+        claim: >-
+          Bind every session, stream or queue entry to an authenticated principal and
+          re-check authorisation before a sensitive action; a session that survives is not
+          a session that is still authorised.
+
+  - id: FM-UNBOUNDED-DELEGATION
+    cluster: identity-and-delegation
+    mechanism: >-
+      Authority is delegable without a stated limit, so a delegation graph grows by
+      composition — A permits B, B permits C — and no participant holds the closure.
+    discriminator: >-
+      Distinct from FM-EXCESS-CAPABILITY, which is the width of one grant, and from
+      FM-AUTHORITY-LOST-AT-HOP, which is one hop misattributing it: this is the transitive
+      closure over many correct grants, which no individual decision bounds and no IAM
+      system bounds by default. Distinct from FM-UNBOUNDED-SPAWNING, which grows the set of
+      holders rather than what an existing set may pass on.
+    admitted_by:
+      - sub-agent spawning or task handoff where the child may delegate onward
+      - capability grants that do not state whether they are re-delegable
+      - any architecture where the participant set is decided at run time
+    runtime_signal: indirect
+    signal_note: >-
+      Comparand: the intended delegation closure, against the closure actually reachable.
+      Visible only if the delegation graph can be enumerated at a point in time. Each
+      individual delegation looks legitimate, so the mechanism has no per-call signature.
+    control_functions: [SCOPE, GOVERN, ISOLATE]
+    test: >-
+      Delegate two levels deep and assert the third level is refused unless explicitly
+      permitted; enumerate the reachable closure and compare against the intended one.
+    sources:
+      - catalogue: OWASP GenAI Security Project
+        edition: State of Agentic AI Security and Governance v2.01, June 2026
+        name: bound transitivity explicitly
+        claim: >-
+          If A delegates to B and B may delegate onward, state the limit, or a spawning
+          architecture grows its delegation mesh by composition and no IAM system bounds
+          the blast radius.
+
+  # ---- inter-agent and systemic -------------------------------------------
+
+  - id: FM-UNAUTHENTICATED-PEER
+    cluster: inter-agent-and-systemic
+    mechanism: >-
+      A message from a peer agent is acted on without authentication, integrity checking or
+      semantic validation, so a forged, tampered or replayed message directs behaviour.
+    discriminator: >-
+      Distinct from FM-ERROR-PROPAGATION because the message is not genuine. Authentication
+      fixes this and does nothing for a genuine message carrying a wrong conclusion.
+    admitted_by:
+      - any agent-to-agent channel, queue or shared board
+      - peer discovery or capability advertisement accepted without verification
+    runtime_signal: direct
+    signal_note: >-
+      A forged or replayed message is detectable at receipt given authentication and a
+      replay window; without them there is nothing to compare against.
+    control_functions: [PREV, VALID, DETECT]
+    test: >-
+      Replay a previously valid inter-agent message and inject a forged one; both must be
+      rejected rather than acted on.
+    sources:
+      - catalogue: OWASP Top 10 for Agentic Applications
+        edition: "2026"
+        id: ASI07
+        name: Insecure Inter-Agent Communication
+        claim: >-
+          Lack of encryption, authentication, or semantic validation of exchanges between
+          agents enables message tampering, replay, or goal manipulation in multi-agent
+          systems.
+
+  - id: FM-ERROR-PROPAGATION
+    cluster: inter-agent-and-systemic
+    mechanism: >-
+      A genuine output carrying a wrong conclusion is consumed downstream as established
+      fact, and each subsequent step compounds it, so harm scales with the length of the
+      chain rather than with the size of the original error.
+    discriminator: >-
+      Distinct from FM-UNAUTHENTICATED-PEER because every message is authentic and every
+      step is individually correct — there is no bad actor and no forged input. Isolation
+      and blast-radius limits apply; authentication does not.
+    admitted_by:
+      - chained autonomous steps where one agent's output is another's input without
+        independent verification
+      - shared state or a common upstream dependency several agents rely on
+      - automation that continues without a checkpoint after a low-confidence step
+    runtime_signal: indirect
+    signal_note: >-
+      Comparand: an independently derived result, or the outcome at the end of the chain rather than at each step.
+      No individual step looks wrong, so per-step monitoring reports health while the chain
+      is failing. Detection requires an outcome check at the end of the chain or a
+      divergence check against an independent path.
+    control_functions: [ISOLATE, SCOPE, DETECT, GATE]
+    test: >-
+      Inject a plausible but wrong intermediate result and measure how far it travels before
+      anything stops it; the distance is the finding.
+    sources:
+      - catalogue: OWASP Top 10 for Agentic Applications
+        edition: "2026"
+        id: ASI08
+        name: Cascading Failures
+        claim: >-
+          A single fault or malicious event propagates across interlinked agents, amplifying
+          harm through chained autonomous actions.
+      - catalogue: OWASP GenAI exploit round-up
+        edition: Q1 2026, 14 April 2026
+        name: Meta internal agent data leak
+        claim: >-
+          An agent's engineering recommendation was implemented and broadened access to
+          sensitive data for two hours — one response producing a wider access-control
+          incident.
+
+  - id: FM-POSTCOMPROMISE-AUTHORITY
+    cluster: inter-agent-and-systemic
+    mechanism: >-
+      A compromised agent keeps its credentials, tool grants and place in the workflow, so
+      compromise converts directly into continued authorised action.
+    discriminator: >-
+      Distinct from FM-BEHAVIOURAL-DRIFT because there is an adversary and a moment of
+      compromise. The control is revocation and containment reachable without the agent's
+      cooperation; drift monitoring would not fire on an agent behaving exactly as an
+      attacker intends.
+    admitted_by:
+      - credentials and grants that persist independently of the agent's integrity state
+      - no out-of-band revocation path for an agent already running
+    runtime_signal: indirect
+    signal_note: >-
+      Comparand: the agent's integrity state, established elsewhere — the run itself carries no sign of it.
+      Behaviour after compromise may be indistinguishable from legitimate use. Detection
+      depends on the compromise being noticed elsewhere, which is why the response path
+      must not require the agent to cooperate.
+    control_functions: [PREV, ISOLATE, DETECT, GOVERN]
+    test: >-
+      Revoke an agent's authority while it is mid-task and assert in-flight and subsequent
+      actions fail closed.
+    sources:
+      - catalogue: OWASP Top 10 for Agentic Applications
+        edition: "2026"
+        id: ASI10
+        name: Rogue Agents
+        claim: >-
+          Compromised or malicious agents deviate from intended goals, collude,
+          self-replicate, or hijack workflows, acting as autonomous insider threats within
+          agent ecosystems.
+        note: ASI10 is one catalogue entry covering four records here; see discriminators.
+
+  - id: FM-BEHAVIOURAL-DRIFT
+    cluster: inter-agent-and-systemic
+    mechanism: >-
+      An agent's behaviour moves away from the approved baseline without any compromise —
+      through accumulated state, a changed model or prompt, a shifted input distribution, or
+      its own adaptation — and keeps acting under the authority granted to the old behaviour.
+    discriminator: >-
+      Distinct from FM-POSTCOMPROMISE-AUTHORITY because there is no adversary and nothing to
+      revoke. The control is a recorded baseline and a comparison against it, which is
+      useless against a compromised agent and necessary here.
+    admitted_by:
+      - any agent whose model, prompts, tools or memory change after approval
+      - self-modifying or self-improving loops
+      - long-running deployments with no re-validation trigger
+    runtime_signal: indirect
+    signal_note: >-
+      Comparand: a recorded baseline of approved behaviour, without which current behaviour reads as normal variation.
+      Detectable only against a recorded baseline of approved behaviour; without one there
+      is nothing for the current behaviour to differ from, and drift reads as normal
+      variation.
+    control_functions: [DETECT, VALID, GOVERN, GATE]
+    test: >-
+      Re-run the frozen evaluation set against the deployed configuration on a schedule and
+      on every change to model, prompt, tool set or memory policy; a difference outside
+      threshold is the finding.
+    sources:
+      - catalogue: OWASP Top 10 for Agentic Applications
+        edition: "2026"
+        id: ASI10
+        name: Rogue Agents
+        claim: >-
+          "...deviate from intended goals..." — the deviation clause, separated here from
+          compromise because the controls differ.
+      - catalogue: OWASP GenAI exploit round-up
+        edition: Q1 2026, 14 April 2026
+        name: OpenClaw inbox deletion
+        claim: >-
+          An agent asked to suggest deletions began deleting directly and ignored stop
+          commands; mapped by the report to ASI10 with the mitigation that destructive
+          actions need explicit confirmation and an emergency stop.
+
+  - id: FM-AGENT-COLLUSION
+    cluster: inter-agent-and-systemic
+    mechanism: >-
+      Two or more agents coordinate toward an outcome none was individually authorised to
+      reach, so every participant's actions look compliant while the joint effect does not.
+    discriminator: >-
+      Distinct from FM-ERROR-PROPAGATION, where a single wrong conclusion travels and each
+      agent is doing its job correctly: here each agent's action is authorised and the joint
+      effect is not, so nothing is wrong until the actions are read together. Distinct from
+      FM-EXCESS-CAPABILITY because no participant holds the excess — the combination does.
+      No per-agent check can see it; the control is cross-agent correlation over a joint
+      effect, which no per-agent monitor performs.
+    admitted_by:
+      - multiple agents sharing an objective, a channel, or a reward signal
+      - agents able to negotiate, bid or partition work among themselves
+      - a joint effect no single agent's authority covers
+    runtime_signal: indirect
+    signal_note: >-
+      Comparand: a joint-effect policy evaluated across agents, since each agent's own trace is clean.
+      Invisible per agent by construction. Detection requires correlating actions across
+      agents against a joint-effect policy, which is a different monitor from any per-agent
+      one and is rarely built.
+    control_functions: [DETECT, SCOPE, ISOLATE, GOVERN]
+    test: >-
+      Construct a task achievable only by two agents combining permissions neither holds
+      alone; the combination must be refused or escalated, not completed.
+    sources:
+      - catalogue: OWASP Top 10 for Agentic Applications
+        edition: "2026"
+        id: ASI10
+        name: Rogue Agents
+        claim: >-
+          "...collude..." — separated here because correlation across agents is a control no
+          other record in this cluster requires.
+
+  - id: FM-UNBOUNDED-SPAWNING
+    cluster: inter-agent-and-systemic
+    mechanism: >-
+      An agent creates further agents or copies of itself, so the set of participants — and
+      therefore the set of things holding authority — is decided at run time and grows
+      without an admission decision.
+    discriminator: >-
+      Distinct from FM-UNBOUNDED-DELEGATION, which grows authority across an existing set;
+      this grows the set. The control is admission and quota on creation, not a limit on
+      what a member may pass on.
+    admitted_by:
+      - any capability to spawn sub-agents, workers or copies at run time
+      - orchestration that sizes the agent pool from the task rather than from a budget
+    runtime_signal: indirect
+    signal_note: >-
+      Comparand: an enumerated participant set and a cap, against the set actually created.
+      Countable if the participant set is enumerated; invisible if agents are created
+      implicitly by the orchestration layer and never registered.
+    control_functions: [SCOPE, PREV, GOVERN, ISOLATE]
+    test: >-
+      Run a task that invites recursive decomposition and assert a hard cap on created
+      agents, with creation refused rather than queued past it.
+    sources:
+      - catalogue: OWASP Top 10 for Agentic Applications
+        edition: "2026"
+        id: ASI10
+        name: Rogue Agents
+        claim: >-
+          "...self-replicate..." — separated here because admission control on creation is a
+          different control from anything the other ASI10 records require.
+
+  # ---- human oversight ----------------------------------------------------
+
+  - id: FM-APPROVAL-SHAPED-OUTPUT
+    cluster: human-oversight
+    mechanism: >-
+      The output is presented so that a wrong action reads as a right one — fluent,
+      confident, with an explanation that sounds like reasoning — and the human approves on
+      the strength of the presentation rather than the substance.
+    discriminator: >-
+      Distinct from FM-UNSUPPORTED-ASSERTION, where the content is wrong and can be checked
+      against evidence: here the content may be checkable and the presentation is what
+      defeats the check. Distinct from FM-REVIEW-CAPACITY because this defeats an able
+      reviewer who did look.
+    admitted_by:
+      - any human approval gate on a model-authored proposal
+      - generated explanations, confidence statements or rationales shown to the approver
+      - a reviewer packet that shows the conclusion more prominently than its evidence
+    runtime_signal: none
+    signal_note: >-
+      No comparand for the individual run: at the moment of approval a well-formed wrong
+      proposal is indistinguishable from a well-formed right one, and that indistinguishability
+      is the mechanism rather than an accident of instrumentation. The approval *path* is
+      nonetheless measurable in aggregate by seeding known-wrong proposals and counting catches
+      — so instrumentation is not pointless here, it measures the control rather than the case.
+      The only record that survives re-derivation as `none`.
+    control_functions: [DISCLOSE, GATE, VALID]
+    test: >-
+      Put known-wrong proposals through the real approval path with real reviewers and
+      measure the catch rate; an approval path never tested against wrong input has an
+      unmeasured catch rate, not a high one.
+    sources:
+      - catalogue: OWASP Top 10 for Agentic Applications
+        edition: "2026"
+        id: ASI09
+        name: Human-Agent Trust Exploitation
+        claim: >-
+          Attackers exploit user over-trust in agent outputs through deception, emotional
+          manipulation, or fake explainability, driving unsafe or fraudulent human approvals.
+      - catalogue: OWASP GenAI exploit round-up
+        edition: Q1 2026, 14 April 2026
+        name: Meta internal agent data leak
+        claim: >-
+          An employee implemented an agent's recommendation, mapped by the report to ASI09
+          as a human trusting the answer enough to act on it.
+
+  - id: FM-REVIEW-CAPACITY
+    cluster: human-oversight
+    mechanism: >-
+      More actions require review than any reviewer can evaluate, so approval degrades into
+      acknowledgement and the gate reports coverage it does not have.
+    discriminator: >-
+      Distinct from FM-APPROVAL-SHAPED-OUTPUT because nothing is disguised — there is simply
+      no review to disguise anything from. Distinct from FM-AUTOMATION-DEFERENCE because the
+      reviewer here would catch it given time and does not have time.
+    admitted_by:
+      - an approval gate applied to a high-volume action class
+      - review routed by sampling rather than by consequence
+      - agent throughput scaled without scaling or re-routing the review
+    runtime_signal: direct
+    signal_note: >-
+      Measurable directly as the ratio of actions a reviewer can genuinely evaluate per hour
+      to actions taken per hour, and as time-per-review; both are countable from existing
+      logs.
+    control_functions: [GATE, SCOPE, GOVERN]
+    test: >-
+      Compute the coverage ratio and state the consequence threshold that routes an action
+      to a human; a claim of oversight over actions outside that threshold is false and
+      should be recorded as such.
+    sources:
+      - catalogue: OWASP GenAI Security Project
+        edition: State of Agentic AI Security and Governance v2.01, June 2026
+        name: oversight as a ratio
+        claim: >-
+          Ten thousand agent actions against a reviewer who can assess fifty is half a
+          percent coverage; where the ratio cannot be raised, route by consequence rather
+          than by sampling.
+
+  - id: FM-AUTOMATION-DEFERENCE
+    cluster: human-oversight
+    mechanism: >-
+      The reviewer defers to the system because it is the system — disagreement is
+      effortful, agreement is cheap, and the override path is unused rather than unavailable.
+    discriminator: >-
+      Distinct from FM-REVIEW-CAPACITY because time is not the constraint; a reviewer with
+      ample time still rubber-stamps. The fix is making disagreement cheap and measuring
+      override rate, neither of which addresses volume.
+    admitted_by:
+      - a review step whose default is approve
+      - an override path requiring more work than acceptance
+      - outputs presented without uncertainty, alternatives or the option to reject cleanly
+    runtime_signal: indirect
+    signal_note: >-
+      Comparand: override rate measured with seeded known-wrong proposals against override rate without them.
+      Visible as an override rate trending to zero, which is ambiguous on its own — it may
+      mean the system is good — so it must be read against injected known-wrong cases before
+      it means anything.
+    control_functions: [DISCLOSE, VALID, GATE]
+    test: >-
+      Measure override rate with and without seeded wrong proposals; a rate that does not
+      move when wrong input is introduced is the finding.
+    sources:
+      - catalogue: Regulation (EU) 2024/1689
+        edition: AI Act Art 14(4)(b)
+        name: automation bias
+        claim: >-
+          Oversight must enable the assigned person to remain aware of the tendency to
+          automatically rely on or over-rely on output — the Act names the disposition as a
+          design target, not a training matter.
+
+  # ---- governance and accountability --------------------------------------
+
+  - id: FM-UNOWNED-ACTION
+    cluster: governance-and-accountability
+    mechanism: >-
+      An agent takes an action for which no named human holds the consequence, so residual
+      risk is accepted by nobody and no decision exists to review after the fact.
+    discriminator: >-
+      Not a technical mechanism, which is exactly why it belongs here: every technical
+      control in this corpus assumes someone owns the decision to accept what the control
+      leaves behind. Distinct from FM-SHADOW-AGENT, where the agent is not known at all.
+    admitted_by:
+      - any autonomous action class deployed without a named accountable role
+      - ownership assigned to a team or a department rather than a person
+    runtime_signal: indirect
+    signal_note: >-
+      Comparand: the register of autonomous action classes against the register of named
+      accountable people. Both are documents, and the gap between them is machine-comparable —
+      an unfilled name fails a check. Nothing in the run itself reveals it, which is why this
+      is a register comparison and not run telemetry.
+    control_functions: [GOVERN, DISCLOSE]
+    test: >-
+      For each autonomous action class, name the accountable person and the record in which
+      they accepted the residual risk; an unfilled name is the finding.
+    sources:
+      - catalogue: OWASP GenAI Security Project
+        edition: State of Agentic AI Security and Governance v2.01, June 2026
+        name: accountability for autonomous action
+        claim: >-
+          The document treats accountability for autonomous action as a governance primitive
+          rather than an operational detail.
+
+  - id: FM-SHADOW-AGENT
+    cluster: governance-and-accountability
+    mechanism: >-
+      An agent runs in the environment without appearing in any inventory, so no control,
+      review or monitor is applied to it because nobody knows it is there.
+    discriminator: >-
+      Distinct from FM-UNOWNED-ACTION, where the agent is known and unowned. Every other
+      record in this corpus presumes the agent is in scope; this one is why that presumption
+      fails first.
+    admitted_by:
+      - self-service agent creation, or agents embedded in purchased products
+      - any capability that can start an agent without registering it
+      - agent frameworks adopted by teams outside the assurance process
+    runtime_signal: indirect
+    signal_note: >-
+      Comparand: issued non-human identities and model-API consumers against the agent
+      inventory. Unobservable from the agent's own telemetry by definition, and entirely
+      observable as a set difference between two registers — provided something is looking for
+      agents rather than for known agents.
+    control_functions: [GOVERN, DETECT, PREV]
+    test: >-
+      Reconcile issued non-human identities and model-API consumers against the agent
+      inventory; anything present in one and absent from the other is the finding.
+    sources:
+      - catalogue: OWASP GenAI Security Project, Agentic Top 10 press release
+        edition: 10 December 2025
+        name: unrecognised agents in the environment
+        claim: >-
+          The Top 10 co-lead states that companies are already exposed to agentic attacks
+          "often without realizing that agents are running in their environments".
+      - catalogue: OWASP Agentic Skills Top 10
+        edition: v1.0, 2026
+        id: AST09
+        name: No Governance
+        claim: Absence of a governing process over the skill and agent estate.
+
+  - id: FM-ORPHANED-AGENT
+    cluster: governance-and-accountability
+    mechanism: >-
+      An agent outlives the purpose it was created for while keeping its identity, grants
+      and access, so a credential nobody watches remains valid indefinitely.
+    discriminator: >-
+      Distinct from FM-EXCESS-CAPABILITY, which is too much scope while in use; an orphaned
+      agent may be perfectly scoped and still be a live credential with no owner and no
+      expected activity to compare against. Distinct from FM-POSTCOMPROMISE-AUTHORITY, where
+      authority persists past a compromise: here it persists past a purpose, with no
+      adversary and nothing to detect.
+    admitted_by:
+      - identity issuance not tied to the workflow lifespan
+      - no automatic offboarding on task, project or deployment completion
+      - pilots and experiments promoted to running systems without a lifecycle owner
+    runtime_signal: indirect
+    signal_note: >-
+      Comparand: the recorded intended lifespan or decommission date, against observed activity.
+      Visible as an identity with no recent legitimate use, but only against a record of
+      what its legitimate use was supposed to be and when it should have ended.
+    control_functions: [GOVERN, SCOPE, PREV]
+    test: >-
+      List agent identities with no activity attributable to a live workflow, and assert
+      each has a decommission date; an identity without one is the finding.
+    sources:
+      - catalogue: OWASP GenAI Security Project
+        edition: State of Agentic AI Security and Governance v2.01, June 2026
+        name: scope to the workflow and expire with it
+        claim: >-
+          Issuance should be automated and ephemeral with offboarding automatic on
+          completion; an agent spun up for a task and never decommissioned keeps a valid
+          identity nobody watches.
+
+  - id: FM-ASSURANCE-BLIND-SPOT
+    cluster: governance-and-accountability
+    mechanism: >-
+      The process that is supposed to surface risk cannot represent this class of risk, so
+      it reports clean while the risk is present — a vulnerability process keyed to CVEs
+      against failures that are misconfiguration, autonomy and trust-boundary design.
+    discriminator: >-
+      A failure of the assurance around the system rather than of the system, and the only
+      record here of that kind. Distinct from FM-SHADOW-AGENT, where the agent is unknown,
+      and from FM-UNOWNED-ACTION, where it is known and unowned: here the agent is known,
+      owned, and its risk class is one the process cannot represent. Every other record can
+      be found by looking; this one determines whether anyone looks.
+    admitted_by:
+      - risk reporting keyed to a vulnerability identifier that agentic failures do not
+        receive
+      - assurance inherited from an application-security process not extended to agency
+    runtime_signal: indirect
+    signal_note: >-
+      Comparand: a set of known disclosed incidents replayed through the intake, against what
+      the process actually raises. The process emits nothing on its own and its silence reads
+      as safety; a known-answer set is what converts that silence into a measurement.
+    control_functions: [GOVERN, DETECT]
+    test: >-
+      Take the last set of publicly disclosed agentic incidents and ask, one by one, whether
+      this organisation's process would have raised them; the ones it would not are the
+      shape of the blind spot.
+    sources:
+      - catalogue: OWASP GenAI exploit round-up
+        edition: Q1 2026, 14 April 2026
+        name: key observation on CVEs
+        claim: >-
+          Most AI-related security events are not mapped to traditional CVE identifiers;
+          they arise from misconfiguration, design flaws, supply-chain weaknesses and
+          prompt injection, so a CVE-driven process sees almost none of them.
+
+  # ---- operational lifecycle ----------------------------------------------
+
+  - id: FM-UNVALIDATED-CHANGE
+    cluster: operational-lifecycle
+    mechanism: >-
+      A model, prompt, tool set, index or policy changes and ships without the frozen
+      evaluation re-running, so behaviour is assumed unchanged because the change was
+      intentional.
+    discriminator: >-
+      Distinct from FM-BEHAVIOURAL-DRIFT, which is change without an intervention: here
+      someone changed something deliberately and skipped the check. The fix is a release
+      gate; drift monitoring would report it too late and after the fact.
+    admitted_by:
+      - any deployable component of the agent that can change independently of the others
+      - prompt or policy edits outside the code release path
+      - provider-side model updates under a floating alias
+    runtime_signal: direct
+    signal_note: >-
+      The change is in version control or in the provider's version string; the absence of a
+      corresponding evaluation run is equally visible to anyone comparing the two.
+    control_functions: [VALID, GATE, GOVERN]
+    test: >-
+      Change each component in turn and assert the release is blocked until the frozen set
+      has run against it; a component whose change does not trigger the gate is outside it.
+    sources:
+      - catalogue: OWASP Agentic AI SecOps Framework
+        edition: Q2 2026
+        name: release-stage duties
+        claim: >-
+          Signing model weights, plugin manifests and memory snapshots, and validating policy
+          bundles cryptographically at deploy time, are named as release-stage duties
+          distinct from development.
+
+  - id: FM-NONTERMINATING-LOOP
+    cluster: operational-lifecycle
+    mechanism: >-
+      The agent loop has no reachable terminal state for some inputs — planning, reflection
+      or retry continues, consuming budget and taking effects, because the condition that
+      would stop it is never met.
+    discriminator: >-
+      Distinct from FM-SPECIFICATION-GAMING, where the agent reaches a wrong end correctly,
+      and from FM-ERROR-PROPAGATION, where a wrong result travels: here each step may be
+      correct and reach nothing, and the loop itself is the failure. The control is a budget
+      and an enumerated terminal state, which no per-step correctness check provides.
+    admitted_by:
+      - self-directed planning or reflection without a step or token budget
+      - retry logic without an error class that is terminal
+      - success conditions the agent evaluates itself
+    runtime_signal: direct
+    signal_note: >-
+      Countable as steps, tokens, cost and wall time against a budget — provided a budget
+      exists to count against. Without one there is no threshold and the loop reads as work.
+    control_functions: [SCOPE, PREV, GATE]
+    test: >-
+      Give the agent a task whose success condition cannot be met and assert it reaches a
+      declared terminal state within budget rather than continuing or stopping silently.
+    sources:
+      - catalogue: OWASP Agentic AI SecOps Framework
+        edition: Q2 2026
+        name: planner-executor hardening
+        claim: >-
+          Hardening the planner-executor against infinite loops and unauthorised
+          self-modification is named as a development-stage duty.
+        note: >-
+          `UNVERIFIED` at the record level. Taken from a reading of the source document, but
+          the duty is not among those listed in the registry entry in
+          references/current-standards.md; re-read the cheat sheet before quoting it.
+
+  # ---- reasoning and execution --------------------------------------------
+
+  - id: FM-SPECIFICATION-GAMING
+    cluster: reasoning-and-execution
+    mechanism: >-
+      The agent satisfies the objective as stated by a route that defeats the intent behind
+      it — optimising the measure rather than the outcome the measure stood for.
+    discriminator: >-
+      Distinct from FM-UNSUPPORTED-ASSERTION and from every error record: nothing is wrong
+      by the system's own lights. It succeeds, and the success is the problem, which is why
+      no correctness check fires.
+    admitted_by:
+      - an objective, reward or success criterion the agent can influence
+      - evaluation against a proxy metric rather than the outcome
+      - autonomy over how the objective is reached
+    runtime_signal: indirect
+    signal_note: >-
+      Comparand: a held-out measure of the outcome the objective stood for, which the agent
+      cannot influence. Every metric derived from the stated objective reports success by
+      construction — the agent is achieving what was measured — so no such metric can detect
+      it. The held-out measure exists only if someone articulated what the objective was a
+      proxy for; where nobody did, this record has no comparand and behaves as `none`.
+    control_functions: [VALID, GATE, DISCLOSE]
+    test: >-
+      State, for each objective, one route that would satisfy it and be unacceptable; if no
+      such route can be named, the objective has not been examined rather than being safe.
+    sources:
+      - catalogue: riskSpec methodology page, Accenture prototype
+        edition: read 2026-08-21
+        name: modes with no direct runtime signal
+        claim: >-
+          Names specification gaming, with the governance modes, as failure modes that
+          cannot be addressed by deterministic gates, per-event metrics, LLM judging or
+          trajectory aggregates alone, and require human assurance or a documented evidence
+          bundle.
+        note: >-
+          A vendor prototype's methodology page, not a standard; recorded because it states
+          the observability consequence explicitly and independently of the OWASP material.
+
+  - id: FM-UNSUPPORTED-ASSERTION
+    cluster: reasoning-and-execution
+    mechanism: >-
+      The agent states as established something its evidence does not support, and the
+      statement reaches an effect — a decision, a record, a downstream step — before anything
+      compares it against the evidence.
+    discriminator: >-
+      Distinct from FM-APPROVAL-SHAPED-OUTPUT, which concerns presentation defeating a
+      reviewer who did look. Distinct from FM-CORPUS-POISONING, where the evidence itself was
+      wrong and the reasoning correct.
+    admitted_by:
+      - generation over retrieved or tool-returned context
+      - any path where output becomes input to an effect without a grounding check
+      - identifiers, quantities and citations emitted rather than resolved
+    runtime_signal: indirect
+    signal_note: >-
+      Comparand: the retrieved context, compared claim by claim after decomposition.
+      Checkable against the retrieved context if claims are decomposed and each is traced;
+      not checkable from the output alone, and an emitted identifier that resolves is not
+      thereby an identifier that supports the claim attached to it.
+    control_functions: [VALID, DETECT, DISCLOSE]
+    test: >-
+      Decompose output into atomic claims and classify each as supported, contradicted or
+      not mentioned by the retrieved context; resolve every emitted identifier against its
+      registry and fail on mismatch.
+    sources:
+      - catalogue: OWASP Top 10 for LLM Applications
+        edition: "2026"
+        id: LLM07
+        name: Misinformation
+        claim: >-
+          Concerns output that is incorrect or misleading. Note the identifier moved: this
+          was LLM09 in the 2025 edition.
+
+# Source claims examined and deliberately NOT made records.
+# Recorded so the next reader does not re-add them, and so the gate stays visible.
+rejected:
+
+  - name: Indirect prompt injection into the working context
+    cluster: memory-and-context
+    sources: [ASI06 "context windows" clause, Microsoft Session Context Contamination]
+    reason: >-
+      A distinct mechanism, but already carried as an abuse case and a dedicated rule in
+      references/security-governance.md. Mapped as an alias, not promoted to a record.
+
+  - name: AST04 Insecure Metadata as a memory mechanism
+    cluster: memory-and-context
+    sources: [OWASP Agentic Skills Top 10, v1.0 2026]
+    reason: >-
+      Not a memory mechanism. Reassigned to FM-TOOL-MISDESCRIBED, where tool and skill
+      metadata is the declaration that can be false.
+
+  - name: LLM05:2026 Data and Model Poisoning
+    cluster: memory-and-context
+    sources: [OWASP Top 10 for LLM Applications, 2026 edition]
+    reason: >-
+      Training-time, not runtime state — it changes the weights, not what the running agent
+      reads. Different lifecycle stage, different controls, different owner. Belongs to a
+      model-provenance cluster when that is built. Note the identifier moved: this was
+      LLM04 in the 2025 edition.
+
+  - name: Agent steered by injection into misusing an honest tool
+    cluster: tools-and-definitions
+    sources: [ASI02 Tool Misuse & Exploitation, steering half]
+    reason: >-
+      The mechanism is prompt injection or goal hijack, both already abuse cases; the tool
+      is the effector, not the failure. Only the width of the grant is a record, as
+      FM-EXCESS-CAPABILITY.
+
+  - name: Cross-tenant data exposure
+    cluster: identity-and-delegation
+    sources: [AI Red Teaming Solutions Taxonomy v1.0, 4 March 2026]
+    reason: >-
+      An instance of FM-EXCESS-CAPABILITY plus the fallback rule already in MEM-01 — "a
+      fallback must never satisfy an identity check". Retained as a test, added to the
+      Agent Tests list, not as a record.
+
+  - name: AI-assisted intrusion campaigns
+    cluster: inter-agent-and-systemic
+    sources: [OWASP GenAI exploit round-up Q1 2026, Mexico government breach]
+    reason: >-
+      The attacker used AI; the assessed system did not fail. Out of scope for a corpus of
+      failure modes of the system under assessment, however severe the incident.
+
+  - name: Debug artifacts shipped in a release package
+    cluster: operational-lifecycle
+    sources: [OWASP GenAI exploit round-up Q1 2026, agent-tooling source leak]
+    reason: >-
+      General release hygiene, not an agentic mechanism — a source map in a published
+      package behaves the same whatever the package does. The agentic half of that incident,
+      developers installing fake "leaked" repositories, is FM-UNAPPROVED-COMPOSITION on the
+      consumer side and is recorded there.
+
+  - name: Known-vulnerable component left reachable
+    cluster: operational-lifecycle
+    sources: [OWASP GenAI exploit round-up Q1 2026, Flowise CVE-2025-59528 exposure]
+    reason: >-
+      Patch management. Real and serious, and not specific to agency — the line this corpus
+      holds is that a mechanism earns a record by arising from the system having agency. The
+      agentic half of that incident, a configuration field reaching an interpreter, is
+      FM-INERT-SURFACE-EXECUTES.
+
+  - name: ASI01 Agent Goal Hijack
+    cluster: reasoning-and-execution
+    sources: [OWASP Top 10 for Agentic Applications, 2026 edition]
+    reason: >-
+      The mechanism is prompt injection, direct or indirect, already carried as an abuse case
+      and a dedicated rule in references/security-governance.md. Recording it again under a
+      catalogue name would duplicate a control the skill already owns. Mapped as an alias.

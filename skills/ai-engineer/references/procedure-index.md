@@ -50,7 +50,7 @@ Required output is routing shorthand; where the module body also states it, the 
 | JDG-02 | Author or edit the rubric criteria text a judge scores against | judge-bias-and-calibration.md | versioned rubric: one affirmative predicate per criterion, count formulae, no-deduction clauses, scale anchors |
 | JDG-03 | Before any judge output is trusted, and after every rubric or judge-prompt edit | judge-bias-and-calibration.md | minimal-pair results per criterion, agreement statistic with n, mitigations, blind spots |
 | JDG-04 | Create an evaluation set or state a numeric release threshold on top of one | judge-bias-and-calibration.md | per failure class metric, threshold, n, SE/CI, blocking status, owner, set hash |
-| SEC-01 | Threat-model an AI system | security-governance.md | actors, assets, boundaries, flows, abuse cases incl. injection, controls |
+| SEC-01 | Threat-model an AI system | security-governance.md | actors, assets, boundaries, flows, abuse cases incl. injection, controls, and the catalogues checked with edition and check date |
 | SEC-02 | Permit an external effect | security-governance.md | pre-effect binding of actor, tenant, resource, operation, policy, approval, key, expiry |
 | SEC-03 | Conduct or reconstruct authorized offensive testing, passive/active boundaries, or security-testing limits | security-governance.md | signed scope with stop conditions, passive-first plan, stop record, ASM-01 audit |
 | FIN-01 | AI participates in fraud, AML/sanctions screening, or credit-adjacent decisioning | financial-crime-model-risk.md | model-or-not determination with reasoning, full inventory entry |
@@ -65,7 +65,7 @@ Required output is routing shorthand; where the module body also states it, the 
 | FRD-03 | An automated or agentic decision goes against a person | fraud-model-risk-guardrails.md | specific reason bound to the scored path, evidence, reviewer, appeal, cohort tests |
 | FRD-04 | An agent acts rather than scores in a fraud or financial-crime path | fraud-model-risk-guardrails.md | authority map, 4 budget scopes, irreversible gate, idempotency plus compensation |
 | REG-01 | Work falls inside a regulated regime for life sciences, healthcare, payments, or financial reporting | regulated-domain-controls.md | per regime: applies or not with reasoning, obligation, control, named owner |
-| REG-02 | An action, record, or decision must be evidenced for inspection or audit | regulated-domain-controls.md | event schema incl. model-actor fields, retention per class, export shown |
+| REG-02 | An action, record, or decision must be evidenced for inspection or audit | regulated-domain-controls.md | event schema incl. model-actor fields, retention per class, export shown, reporting clocks with start conditions |
 | REG-03 | Validate or change a regulated system, including a provider or model version change | regulated-domain-controls.md | intended use, risk assessment, frozen set passing run, trigger table, change record |
 | REG-04 | Regulated or personal data enters a prompt, trace, index, or memory store | regulated-domain-controls.md | field classification and flow map, scope-exclusion argument, retention per class |
 | REG-05 | Model output becomes an official record, signed record, or reporting input | regulated-domain-controls.md | official-output register, approval state machine, reviewer packet, decision schema |

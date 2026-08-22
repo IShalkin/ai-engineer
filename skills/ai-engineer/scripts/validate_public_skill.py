@@ -56,6 +56,12 @@ def _skill_regions(skill_text: str) -> "dict[str, str]":
     router, loading, boundary = [], [], []
     section = None
     fenced = False
+    # The boundary region was one sentence and is now an enumerated list, because a
+    # measured routing run showed the prose form matching on the request's vocabulary
+    # rather than on its situation. Both openings are accepted and the list body is
+    # captured until the next ordinary paragraph; without that, this arm silently counts
+    # zero IDs while still printing a number, which reads as coverage it does not have.
+    in_boundary = False
     for line in skill_text.splitlines():
         if line.lstrip().startswith("```"):
             fenced = not fenced
@@ -64,12 +70,19 @@ def _skill_regions(skill_text: str) -> "dict[str, str]":
             continue
         if line.startswith("## "):
             section = line[3:].strip()
+            in_boundary = False
         if section == "Task Router" and line.startswith("|"):
             router.append(line)
         elif section == "Context Loading Protocol" and re.match(r"\s*\d+\.", line):
             loading.append(line)
-        elif line.startswith("Preserve these compound boundaries"):
+        elif line.startswith(("**Compound boundaries.**", "Preserve these compound boundaries")):
+            in_boundary = True
             boundary.append(line)
+        elif in_boundary:
+            if re.match(r"\s*\d+\.", line) or not line.strip():
+                boundary.append(line)
+            else:
+                in_boundary = False
     return {
         "task-router row": "\n".join(router),
         "compound-boundary paragraph": "\n".join(boundary),

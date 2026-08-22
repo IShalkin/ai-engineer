@@ -98,19 +98,49 @@ def make_fixture_provider(fixtures_dir):
     return provider
 
 
+def parse_command(spec):
+    """argv for the runner. A JSON array is taken literally; a plain string is split.
+
+    Splitting on whitespace is wrong the moment any path contains a space, which every
+    Windows Python installation does: "C:/Program Files/Python313/python.exe runner.py"
+    became ["C:/Program", "Files/Python313/python.exe", "runner.py"]. It appeared to work
+    because Windows resolves an executable across a space leniently, so the process
+    started -- with the rest of its own path handed to it as the script argument. Pass a
+    JSON array to say exactly what you mean.
+    """
+    spec = spec.strip()
+    if spec.startswith("["):
+        try:
+            argv = json.loads(spec)
+        except ValueError as exc:
+            raise HarnessError("--command looks like JSON but does not parse: %s" % exc)
+        if not isinstance(argv, list) or not argv or not all(isinstance(a, str) for a in argv):
+            raise HarnessError("--command JSON must be a non-empty array of strings")
+        return argv
+    return spec.split()
+
+
 def make_command_provider(argv):
     def provider(request, case_id, repeat):
         try:
-            out = subprocess.run(
+            done = subprocess.run(
                 argv, input=request, capture_output=True, text=True, encoding="utf-8"
-            ).stdout
+            )
         except OSError as exc:
             raise HarnessError("provider command failed to start: %s" % exc)
+        out = done.stdout
         try:
             data = json.loads(out)
         except json.JSONDecodeError as exc:
+            # stderr is not scored, but it is the only place a runner can say WHY it gave
+            # up. Without quoting it, five identical "stdout is not valid JSON" lines are
+            # all a report shows for a case that timed out, and the reason has to be
+            # rediscovered by hand.
+            why = (done.stderr or "").strip().splitlines()
+            tail = " | ".join(why[-3:])[:400] if why else "(runner said nothing on stderr)"
             raise HarnessError(
-                "provider stdout is not valid JSON for case %s: %s" % (case_id, exc)
+                "provider stdout is not valid JSON for case %s: %s; runner stderr: %s"
+                % (case_id, exc, tail)
             )
         return validate_response(data, "provider output for case %s" % case_id)
 
@@ -212,23 +242,132 @@ METRICS = (
 GOOD_IS_TRUE = {"primary_accuracy", "boundary_recall", "module_recall", "mode_accuracy"}
 
 
-def run(cases, provider, n):
-    """-> (per_case, errors). per_case[i] = {id, fractions: {metric: frac|None}}."""
+def load_result_log(path):
+    """{(case_id, repeat): score_or_error} already recorded. Missing file -> empty.
+
+    A truncated final line is dropped rather than raising: the usual reason a line is
+    half-written is that the process was killed mid-append, and losing one call is the
+    correct cost of that. A corrupt line anywhere else is still a hard error, because
+    silently skipping recorded results would let a resumed run report fewer repeats than
+    it claims.
+    """
+    done = {}
+    if not path or not os.path.exists(path):
+        return done
+    with open(path, encoding="utf-8") as fh:
+        lines = fh.read().splitlines()
+    for i, line in enumerate(lines):
+        line = line.strip()
+        if not line:
+            continue
+        try:
+            rec = json.loads(line)
+        except ValueError:
+            if i == len(lines) - 1:
+                continue  # killed mid-append
+            raise HarnessError("result log line %d is not valid JSON: %s" % (i + 1, path))
+        done[(rec["id"], rec["repeat"])] = rec
+    return done
+
+
+def run(cases, provider, n, jobs=1, result_log=None, resume=False):
+    """-> (per_case, errors). per_case[i] = {id, fractions: {metric: frac|None}}.
+
+    `jobs` runs (case, repeat) pairs concurrently. Every provider call is independent by
+    contract -- one process per call, request on stdin -- so concurrency changes only how
+    long the run takes. It must not change what the run says, which is why results are
+    collected into a keyed table and assembled in case order afterwards rather than
+    appended as they land; the selftest asserts jobs=1 and jobs=4 agree.
+
+    Concurrency is bounded by whatever the provider talks to, not by this harness. Too
+    many jobs against a rate-limited endpoint turns into throttling that reads as model
+    slowness, so this stays an explicit operator choice with a default of 1.
+    """
+    recorded = load_result_log(result_log) if resume else {}
+    # A harness error is not a measurement, so resuming re-runs it. Skipping it would let
+    # a raised timeout or a fixed runner bug never get retried, and the report would keep
+    # excluding the same cases from every denominator while looking complete.
+    previous = {k: v for k, v in recorded.items() if v.get("error") is None}
+    tasks = [
+        (ci, case, r)
+        for ci, case in enumerate(cases)
+        for r in range(n)
+        if (case["id"], r) not in previous
+    ]
+    if previous:
+        print(
+            "resuming: %d of %d calls already in %s"
+            % (len(previous), len(cases) * n, result_log),
+            file=sys.stderr,
+        )
+    scored = {}
+    failed = {}
+    # One lock for the append. Each write is a single line, so a reader always sees whole
+    # records; without the lock two threads interleave partial lines and the log becomes
+    # unparseable exactly when it matters, after a kill.
+    import threading
+
+    lock = threading.Lock()
+    sink = open(result_log, "a", encoding="utf-8", newline="\n") if result_log else None
+
+    def record(case_id, repeat, score, error):
+        if sink is None:
+            return
+        rec = {"id": case_id, "repeat": repeat, "score": score, "error": error}
+        with lock:
+            sink.write(json.dumps(rec) + "\n")
+            sink.flush()  # a buffered result is a lost result
+            os.fsync(sink.fileno())
+
+    def one(task):
+        ci, case, r = task
+        try:
+            score = score_once(case, provider(case["request"], case["id"], r))
+        except HarnessError as exc:
+            record(case["id"], r, None, str(exc))
+            return ci, r, None, str(exc)
+        record(case["id"], r, score, None)
+        return ci, r, score, None
+
+    try:
+        if jobs > 1:
+            from concurrent.futures import ThreadPoolExecutor
+
+            with ThreadPoolExecutor(max_workers=jobs) as pool:
+                outcomes = list(pool.map(one, tasks))
+        else:
+            outcomes = [one(t) for t in tasks]
+    finally:
+        if sink is not None:
+            sink.close()
+
+    by_id = {case["id"]: ci for ci, case in enumerate(cases)}
+    for (case_id, repeat), rec in previous.items():
+        ci = by_id.get(case_id)
+        if ci is None:
+            continue  # the log holds a case no longer in the corpus; not this run's business
+        if rec.get("error") is None:
+            scored[(ci, repeat)] = rec["score"]
+        else:
+            failed[(ci, repeat)] = rec["error"]
+
+    for ci, r, score, error in outcomes:
+        if error is None:
+            scored[(ci, r)] = score
+        else:
+            failed[(ci, r)] = error
+
     per_case, errors = [], []
-    for case in cases:
-        runs = []
+    for ci, case in enumerate(cases):
         for r in range(n):
-            try:
-                resp = provider(case["request"], case["id"], r)
-            except HarnessError as exc:
-                errors.append({"id": case["id"], "repeat": r, "error": str(exc)})
-                continue
-            runs.append(score_once(case, resp))
+            if (ci, r) in failed:
+                errors.append({"id": case["id"], "repeat": r, "error": failed[(ci, r)]})
+        runs = [scored[(ci, r)] for r in range(n) if (ci, r) in scored]
         if not runs:
             continue  # every repeat errored; already recorded as a harness error
         fractions = {}
         for m in METRICS:
-            vals = [r[m] for r in runs if r[m] is not None]
+            vals = [x[m] for x in runs if x[m] is not None]
             fractions[m] = (sum(vals) / len(vals)) if vals else None
         per_case.append({"id": case["id"], "n_scored": len(runs), "fractions": fractions})
     return per_case, errors
@@ -296,6 +435,8 @@ def provenance(args):
         "model": args.model,
         "effort": args.effort,
         "n": args.n,
+        "jobs": args.jobs,
+        "resumed_from": args.result_log if args.resume else None,
         "date": args.date,  # caller-supplied; the harness never reads a clock
         "sha256": {rel: sha256_file(rel) for rel in HASHED_FILES},
         "references_sha256": sha256_references(),
@@ -467,6 +608,23 @@ def build_parser():
     ap.add_argument("--provider", choices=("fixture", "command"), default="fixture")
     ap.add_argument("--command", help="argv of the external provider; request on stdin, JSON on stdout")
     ap.add_argument("-n", type=int, default=1, help="repeats per case")
+    ap.add_argument(
+        "--jobs",
+        type=int,
+        default=1,
+        help="run this many (case, repeat) pairs concurrently; results are identical to "
+        "--jobs 1, only faster. Bound it by what your provider tolerates.",
+    )
+    ap.add_argument(
+        "--result-log",
+        help="append one JSON line per completed call. A 435-call run that dies at call 220 "
+        "otherwise reports nothing at all: every score lives in memory until the end.",
+    )
+    ap.add_argument(
+        "--resume",
+        action="store_true",
+        help="skip calls already present in --result-log instead of re-paying for them",
+    )
     ap.add_argument("--date", help="run date, ISO (required; the harness never reads a clock)")
     ap.add_argument("--model", default="unspecified", help="recorded verbatim")
     ap.add_argument("--effort", default="unspecified", help="recorded verbatim")
@@ -496,12 +654,14 @@ def main(argv=None):
         if args.provider == "command":
             if not args.command:
                 build_parser().error("--provider command requires --command")
-            provider = make_command_provider(args.command.split())
+            provider = make_command_provider(parse_command(args.command))
         else:
             provider = make_fixture_provider(args.fixtures)
         prov = provenance(args)
         cases = load_cases(args.cases)
-        per_case, errors = run(cases, provider, args.n)
+        per_case, errors = run(
+            cases, provider, args.n, args.jobs, args.result_log, args.resume
+        )
     except HarnessError as exc:
         print("HARNESS ERROR: %s" % exc, file=sys.stderr)
         return 2
@@ -543,21 +703,21 @@ def selftest():
     # 1. missing one expected boundary ID -> 0, not partial credit
     f = frac("st-boundary-partial", "boundary_recall", expect_boundary_ids=["b1", "b2"])
     assert f == 0.0, f
-    print("  ok  1/10  one of two expected boundaries fired -> boundary_recall 0.0 (no partial credit)")
+    print("  ok  1/12  one of two expected boundaries fired -> boundary_recall 0.0 (no partial credit)")
 
     # 2. unexpected boundary raises false_boundary_rate, recall stays 1.0
     kw = {"expect_boundary_ids": ["b1"]}
     r = frac("st-boundary-extra", "boundary_recall", **kw)
     fb = frac("st-boundary-extra", "false_boundary_rate", **kw)
     assert (r, fb) == (1.0, 1.0), (r, fb)
-    print("  ok  2/10  unexpected boundary -> false_boundary_rate 1.0, boundary_recall still 1.0")
+    print("  ok  2/12  unexpected boundary -> false_boundary_rate 1.0, boundary_recall still 1.0")
 
     # 3. negative case that loads a module is caught
     v = frac("st-negative-loads", "negative_violation", negative=True)
     assert v == 1.0, v
     clean = frac("st-clean", "negative_violation", negative=True)
     assert clean == 0.0, clean
-    print("  ok  3/10  negative case loading one module -> negative_violation 1.0 (clean case 0.0)")
+    print("  ok  3/12  negative case loading one module -> negative_violation 1.0 (clean case 0.0)")
 
     # 4. three of five repeats -> 0.6 and lands in UNSTABLE
     c = case("st-flaky")
@@ -568,7 +728,7 @@ def selftest():
     uns = unstable(pc)
     assert len(uns) == 1 and uns[0]["id"] == "st-flaky", uns
     assert abs(uns[0]["metrics"]["primary_accuracy"] - 0.6) < 1e-9
-    print("  ok  4/10  3 of 5 repeats pass -> pass fraction 0.6, case listed in UNSTABLE")
+    print("  ok  4/12  3 of 5 repeats pass -> pass fraction 0.6, case listed in UNSTABLE")
 
     # 5. malformed provider output is a harness error, not a scoring failure
     pc, errs = run([case("st-malformed"), case("st-missing-fixture")], provider, 1)
@@ -578,19 +738,19 @@ def selftest():
     assert "missing fixture" in errs[1]["error"], errs[1]
     agg = aggregate(pc)
     assert all(agg[m]["value"] is None for m in METRICS), agg
-    print("  ok  5/10  malformed stdout + missing fixture -> 2 harness errors, 0 scored cases")
+    print("  ok  5/12  malformed stdout + missing fixture -> 2 harness errors, 0 scored cases")
 
     # 6. loading nothing while naming the right IDs must not score a perfect card
     mr = frac("st-no-modules", "module_recall", expect_modules=[real])
     ok = frac("st-overload", "module_recall", expect_modules=[real])
     assert (mr, ok) == (0.0, 1.0), (mr, ok)
-    print("  ok  6/10  correct ids but no module loaded -> module_recall 0.0")
+    print("  ok  6/12  correct ids but no module loaded -> module_recall 0.0")
 
     # 7. a module name that is not a real file is unscoreable, not a clean answer
     pc, errs = run([case("st-unknown-module", forbid_modules=["context-prompt-engineering.md"])], provider, 1)
     assert pc == [] and len(errs) == 1, (pc, errs)
     assert "do not exist" in errs[0]["error"], errs[0]
-    print("  ok  7/10  module name that is not a real file -> harness error, not forbidden_load_rate 0.0")
+    print("  ok  7/12  module name that is not a real file -> harness error, not forbidden_load_rate 0.0")
 
     # 8. a case missing an expectation key is a harness error, not a silently unpassable case
     with tempfile.TemporaryDirectory() as td:
@@ -602,7 +762,7 @@ def selftest():
             raise AssertionError("missing expectation key was accepted")
         except HarnessError as exc:
             assert "expect_modules" in str(exc), exc
-    print("  ok  8/10  case line missing an expectation key -> harness error")
+    print("  ok  8/12  case line missing an expectation key -> harness error")
 
     # 9. IDs and modes are labels: a real reply capitalises the mode and punctuates the ID
     typo = score_once(
@@ -621,7 +781,7 @@ def selftest():
          "modules": ["Architecture-Decision-Engine.md"]},
     )
     assert near["module_recall"] is False, near
-    print("  ok  9/10  ID/mode compared as labels; module filenames still compared exactly")
+    print("  ok  9/12  ID/mode compared as labels; module filenames still compared exactly")
 
     # 10. a negative case is scored on what it loads, not on whether it named an ID
     neg = score_once(
@@ -631,7 +791,54 @@ def selftest():
     )
     assert neg["primary_accuracy"] is None, neg
     assert neg["negative_violation"] is False and neg["mode_accuracy"], neg
-    print("  ok 10/10  negative case: primary_accuracy not applicable, negative_violation scores it")
+    print("  ok 10/12  negative case: primary_accuracy not applicable, negative_violation scores it")
+
+    # 11. --jobs must change only the wall clock. A concurrent run that appends results as
+    # they land reorders per_case and reassigns repeats between cases; both produce a report
+    # that looks fine and attributes scores to the wrong case.
+    many = [case("st-flaky"), case("st-clean"), case("st-boundary-partial",
+            expect_boundary_ids=["ARC-02", "HRN-02"])]
+    seq_pc, seq_err = run(many, provider, 3, 1)
+    par_pc, par_err = run(many, provider, 3, 4)
+    assert seq_pc == par_pc, (seq_pc, par_pc)
+    assert seq_err == par_err, (seq_err, par_err)
+    assert [c["id"] for c in par_pc] == [c["id"] for c in many], par_pc
+    print("  ok 11/12  --jobs 4 returns byte-identical per-case results and order as --jobs 1")
+
+    # 12. a killed run must cost only the calls in flight, and a resume must not re-pay for
+    # what is already recorded, nor silently report fewer repeats than it claims
+    with tempfile.TemporaryDirectory() as td:
+        logp = os.path.join(td, "results.jsonl")
+        three = [case("st-clean"), case("st-flaky")]
+        run(three, provider, 2, 1, logp, False)
+        recorded = load_result_log(logp)
+        assert len(recorded) == 4, recorded
+
+        calls = {"n": 0}
+
+        def counting(request, case_id, repeat):
+            calls["n"] += 1
+            return provider(request, case_id, repeat)
+
+        resumed_pc, resumed_err = run(three, provider=counting, n=2, jobs=1,
+                                      result_log=logp, resume=True)
+        assert calls["n"] == 0, "resume re-paid for %d recorded calls" % calls["n"]
+        fresh_pc, _ = run(three, provider, 2, 1)
+        assert resumed_pc == fresh_pc, (resumed_pc, fresh_pc)
+
+        # a line truncated by the kill is dropped; that call is simply re-run
+        with open(logp, "a", encoding="utf-8", newline="\n") as fh:
+            fh.write('{"id": "st-clean", "repe')
+        assert len(load_result_log(logp)) == 4, "truncated tail was not dropped"
+        # but a corrupt line in the middle must not be skipped in silence
+        with open(logp, "a", encoding="utf-8", newline="\n") as fh:
+            fh.write("\n" + json.dumps({"id": "st-clean", "repeat": 9, "score": None, "error": "x"}) + "\n")
+        try:
+            load_result_log(logp)
+            raise AssertionError("corrupt mid-file line was accepted")
+        except HarnessError:
+            pass
+    print("  ok 12/12  --result-log survives a kill; --resume re-pays nothing and agrees with a full run")
 
     # --check-cases must reject the two defects that reached the shipped corpus once already
     with tempfile.TemporaryDirectory() as td:

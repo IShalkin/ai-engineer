@@ -10,7 +10,7 @@ Why this exists rather than a single chat/completions call: `modules` is meant t
 the set of procedure files whose text actually entered the model's context. A chat
 call can only report what the model SAYS it would read, which turns module_recall
 into a seventh name-matching metric. Here `modules` is read off the transcript's
-Read/Grep/Glob tool calls -- observation, not declaration. `primary`, `boundary_ids`
+Read tool calls -- observation, not declaration. `primary`, `boundary_ids`
 and `mode` are still self-reported, because no tool call reveals them.
 
 The package under test is loaded as a session-scoped plugin built from this
@@ -28,9 +28,10 @@ to this repository):
                           Keep it outside this repository.
     EVAL_TIMEOUT          optional per-case seconds, default 600
     EVAL_KEEP_TRANSCRIPT  optional directory; each run's raw stream-json is written
-                          there as <pid>-<n>.jsonl for after-the-fact inspection
+                          there as <sha1-of-request>.jsonl, which joins to cases.jsonl
 """
 
+import hashlib
 import json
 import os
 import shutil
@@ -56,7 +57,8 @@ REPORT_INSTRUCTION = (
     '"mode": "<the operating mode you selected>"}'
 )
 
-READ_TOOLS = ("Read", "Grep", "Glob")
+# Only Read puts a module body into context. See modules_from_tool_use.
+READ_TOOLS = ("Read",)
 
 
 def log(msg):
@@ -125,27 +127,29 @@ def build_argv(plugin_dir):
 
 
 def modules_from_tool_use(block):
-    """Module basenames a tool call brought into context, as observed."""
-    name = block.get("name")
-    if name not in READ_TOOLS:
+    """Module basenames whose TEXT this tool call put into context, as observed.
+
+    Only `Read` qualifies. `Glob` returns a list of filenames and no file content, so
+    counting it as a load credits the agent for discovering that a module exists; worse,
+    its argument is a pattern, and `references/*.md` was being recorded as a module named
+    `*.md`, which the harness correctly rejected as a file that does not exist. `Grep`
+    returns matching lines rather than the procedure, and its target is usually a
+    directory, so it cannot establish that any particular module was read either.
+
+    The consequence is deliberate: an agent that greps for a control instead of opening
+    the module scores module_recall 0. That is the intended reading -- the procedure is
+    the module body, and a matched line is not the body.
+    """
+    if block.get("name") != "Read":
         return []
-    args = block.get("input") or {}
-    candidates = [
-        args.get("file_path"),
-        args.get("path"),
-        args.get("pattern") if name == "Glob" else None,
-    ]
-    found = []
-    for cand in candidates:
-        if not isinstance(cand, str):
-            continue
-        norm = cand.replace("\\", "/")
-        if REFERENCES.replace("\\", "/") not in norm:
-            continue
-        base = os.path.basename(norm)
-        if base.endswith(".md"):
-            found.append(base)
-    return found
+    path = (block.get("input") or {}).get("file_path")
+    if not isinstance(path, str):
+        return []
+    norm = path.replace("\\", "/")
+    if REFERENCES.replace("\\", "/") not in norm:
+        return []
+    base = os.path.basename(norm)
+    return [base] if base.endswith(".md") and "*" not in base else []
 
 
 def parse_stream(lines):
@@ -245,13 +249,35 @@ def main():
         except OSError as exc:
             log("could not start the CLI: %s" % exc)
             return 1
-        except subprocess.TimeoutExpired:
-            log("case timed out")
+        except subprocess.TimeoutExpired as exc:
+            # Keep whatever the session produced before the clock ran out. A timeout with
+            # no transcript is unexplainable, and the interesting question -- what was it
+            # doing for ten minutes -- is answerable only from the partial stream.
+            partial = exc.stdout or b""
+            if isinstance(partial, bytes):
+                partial = partial.decode("utf-8", "replace")
+            keep_dir = os.environ.get("EVAL_KEEP_TRANSCRIPT")
+            if keep_dir and partial:
+                os.makedirs(keep_dir, exist_ok=True)
+                digest = hashlib.sha1(request.encode("utf-8")).hexdigest()[:12]
+                path = os.path.join(keep_dir, "%s.timeout.jsonl" % digest)
+                with open(path, "w", encoding="utf-8") as fh:
+                    fh.write(partial)
+                log("timed out after %ss; partial transcript: %s" % (
+                    os.environ.get("EVAL_TIMEOUT", "600"), path))
+            else:
+                log("timed out after %ss with no output captured"
+                    % os.environ.get("EVAL_TIMEOUT", "600"))
             return 1
         keep = os.environ.get("EVAL_KEEP_TRANSCRIPT")
         if keep:
             os.makedirs(keep, exist_ok=True)
-            path = os.path.join(keep, "%d-%d.jsonl" % (os.getpid(), id(request) % 10000))
+            # Named by a digest of the request, because the harness contract hands this
+            # runner the request and nothing else. A transcript named after the process id
+            # cannot be tied back to a case, which is exactly what you need it for when a
+            # metric drops; the digest joins to `cases.jsonl` on the request text.
+            digest = hashlib.sha1(request.encode("utf-8")).hexdigest()[:12]
+            path = os.path.join(keep, "%s.jsonl" % digest)
             with open(path, "w", encoding="utf-8") as fh:
                 fh.write(proc.stdout)
             log("transcript: %s" % path)

@@ -93,9 +93,12 @@ is written to its stdin, stdin is closed. It must write exactly one JSON object 
  "boundary_ids": ["HRN-02"], "mode": "design"}
 ```
 
-Anything else on stdout is a harness error for that case. Exit status and stderr are
-ignored. The harness ships no default command, embeds no model name, and reads no
-credential. Model identity and effort are **recorded verbatim from `--model`/`--effort`,
+Anything else on stdout is a harness error for that case. Exit status is ignored; stderr is
+not scored either, but its last lines are quoted into the harness error, because it is the
+only channel a runner has for saying why it gave up. Without that, five repeats of a case
+that timed out read as five identical "stdout is not valid JSON" lines and the cause has to
+be rediscovered by hand. The harness ships no default command, embeds no model name, and
+reads no credential. Model identity and effort are **recorded verbatim from `--model`/`--effort`,
 never chosen by the harness** — the harness cannot know what your runner called, so a
 number without those flags is a number you cannot attribute. `--date` is required for the
 same reason: no clock is read, so a report cannot self-stamp.
@@ -103,8 +106,12 @@ same reason: no clock is read, so a report cannot self-stamp.
 ### The shipped runner: `eval/providers/agent_provider.py`
 
 One runner honouring that contract ships. It starts a real Claude Code session with read-only
-tools, then reads `modules` **off the transcript's `Read`/`Grep`/`Glob` calls** rather than
-asking the model what it would have read. That distinction is the whole point of the runner:
+tools, then reads `modules` **off the transcript's `Read` calls** rather than asking the model
+what it would have read. Only `Read` counts: `Glob` returns filenames and no content, and
+`Grep` returns matching lines against a directory, so neither establishes that a procedure
+body entered the context. An agent that greps for a control instead of opening the module
+therefore scores `module_recall` 0, which is the intended reading — a matched line is not the
+procedure. That distinction is the whole point of the runner:
 a single chat completion can only collect a declaration, which would turn `module_recall`
 into an eighth name-matching metric instead of evidence that procedure text entered the
 context. `primary`, `boundary_ids` and `mode` stay self-reported — no tool call reveals them.
@@ -129,6 +136,50 @@ Two things this runner does **not** measure. It invokes the skill explicitly, so
 *auto-activation* from the `description` alone is untested — a separate question needing its
 own cases. And it appends one instruction asking for the final JSON, so the reply format is
 prompted; the routing decisions inside it are not.
+
+A transcript is named by a digest of the request, so it joins back to `cases.jsonl`; a
+transcript named after a process cannot be tied to a case, which is the one job it has. On a
+timeout the partial stream is kept as `<digest>.timeout.jsonl`, because "what was it doing for
+twenty minutes" is answerable only from that file. Repeats of one case share a digest and
+therefore overwrite each other: a kept transcript is one sample, never the repeat that failed.
+
+### Surviving a long run
+
+87 cases at n=5 is 435 sessions and several hours, and anything that takes hours gets
+interrupted. Three pieces exist only because of that:
+
+```
+python eval/run_until_done.py --result-log run.jsonl --json-out report.json \
+    --date 2026-08-22 -n 5 --jobs 6
+```
+
+`--result-log` appends one fsync'd line per completed call, so an interruption costs the calls
+in flight instead of the whole run. `--resume` skips what the log holds, and deliberately
+**retries calls recorded as errors** — a harness error is not a measurement, and skipping it
+would mean a raised timeout or a fixed runner bug never gets retried while the report keeps
+excluding the same cases from every denominator and looking complete. `run_until_done.py`
+re-invokes until the log is full, ignoring the child's exit status because a killed child
+reports failure having recorded real work; the log is the only authority. `progress.py` is the
+shared counter.
+
+The loop refuses to start without `EVAL_MODEL`, and stops as soon as an attempt records no new
+results. Both guards come from one incident: an earlier shell version of the loop ran with
+`EVAL_MODEL` unset — on that machine `sh` does not inherit exported variables — and produced
+4127 failed calls across eight attempts, burying 137 real results. A retry loop is only
+justified while retrying achieves something; an attempt that records nothing means the failure
+is configuration rather than interruption.
+
+### Explaining a failure
+
+```
+python eval/explain_failures.py --result-log run.jsonl --transcripts <dir> [--metric module_recall]
+```
+
+Prints, per failing case, the asserted sets beside what the agent actually opened and reported.
+Rates say a metric moved; they never say what happened instead, and an unexplained metric gets
+argued about rather than fixed. It states its own limits: the transcript is one sample, and
+`primary`/`mode`/`boundary_ids` are self-reported, so a wrong self-report and a wrong decision
+are indistinguishable there.
 
 ### First live run (8 of 87 cases, n=1)
 

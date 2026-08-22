@@ -45,8 +45,8 @@ Do not add autonomy to compensate for unclear requirements or broken determinist
 6. Does any claim rest on provider behaviour, context limits, caching, retention, or pricing? → `SRC-01`.
 7. Can the work pause, be interrupted, cancelled, wait for a human, or resume after a crash? → `HRN-02`.
 8. Is this an authorized-security reconstruction? → `SEC-03`, `SRC-01`, `ASM-01`.
-9. Does the system read anything it does not control, hold data it must not disclose, or change its own instructions, tools, or training? → `SEC-01`.
-10. Does the answer assert that the system behaves some way — accuracy, relevance, which skill activates, a threshold, a cohort, throughput on given hardware? → `EVA-01`, because the assertion needs cases before anyone relies on it.
+
+Two further boundaries are drafted and deliberately **not** listed here: an untrusted-input, non-disclosure or self-modification condition activating `SEC-01`, and a behaviour claim — accuracy, relevance, activation, a threshold, a cohort, throughput on given hardware — activating `EVA-01`. Both were removed before a baseline run because no case in `eval/cases.jsonl` asserts either as a compound boundary, so a model firing them correctly would be charged `false_boundary_rate`. Adding them means revising the authored expectations first; that is a maintainer decision and it is recorded in `eval/coverage-plan.md`, not settled here.
 
 ## Context Loading Protocol
 

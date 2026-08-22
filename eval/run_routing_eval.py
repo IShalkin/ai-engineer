@@ -98,6 +98,28 @@ def make_fixture_provider(fixtures_dir):
     return provider
 
 
+def parse_command(spec):
+    """argv for the runner. A JSON array is taken literally; a plain string is split.
+
+    Splitting on whitespace is wrong the moment any path contains a space, which every
+    Windows Python installation does: "C:/Program Files/Python313/python.exe runner.py"
+    became ["C:/Program", "Files/Python313/python.exe", "runner.py"]. It appeared to work
+    because Windows resolves an executable across a space leniently, so the process
+    started -- with the rest of its own path handed to it as the script argument. Pass a
+    JSON array to say exactly what you mean.
+    """
+    spec = spec.strip()
+    if spec.startswith("["):
+        try:
+            argv = json.loads(spec)
+        except ValueError as exc:
+            raise HarnessError("--command looks like JSON but does not parse: %s" % exc)
+        if not isinstance(argv, list) or not argv or not all(isinstance(a, str) for a in argv):
+            raise HarnessError("--command JSON must be a non-empty array of strings")
+        return argv
+    return spec.split()
+
+
 def make_command_provider(argv):
     def provider(request, case_id, repeat):
         try:
@@ -610,7 +632,7 @@ def main(argv=None):
         if args.provider == "command":
             if not args.command:
                 build_parser().error("--provider command requires --command")
-            provider = make_command_provider(args.command.split())
+            provider = make_command_provider(parse_command(args.command))
         else:
             provider = make_fixture_provider(args.fixtures)
         prov = provenance(args)

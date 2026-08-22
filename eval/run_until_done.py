@@ -25,6 +25,7 @@ Two guards, both learned from that incident:
 """
 
 import argparse
+import json
 import os
 import subprocess
 import sys
@@ -36,8 +37,6 @@ PROVIDER = os.path.join(HERE, "providers", "agent_provider.py")
 
 def recorded(log, cases, repeats):
     """(successful calls, total expected). Errors are not "done": --resume retries them."""
-    import json
-
     with open(cases, encoding="utf-8") as fh:
         total = sum(1 for line in fh if line.strip()) * repeats
     done = 0
@@ -93,11 +92,10 @@ def main(argv=None):
                 HARNESS,
                 "--cases", args.cases,
                 "--provider", "command",
-                # One string, split by the harness on whitespace. sys.executable can hold
-                # a space ("C:/Program Files/..."), and Windows resolves that leniently
-                # for an absolute path, which is why this works -- but it is the reason
-                # the provider path is passed separately rather than quoted into a shell.
-                "--command", "%s %s" % (sys.executable, PROVIDER),
+                # JSON array, not a string: sys.executable contains a space on Windows
+                # and whitespace splitting silently handed half of its own path to the
+                # interpreter as a script argument.
+                "--command", json.dumps([sys.executable, PROVIDER]),
                 "-n", str(args.n),
                 "--jobs", str(args.jobs),
                 "--date", args.date,

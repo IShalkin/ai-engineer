@@ -7,9 +7,7 @@
 # that reason is written in `discriminator` so the gate can be audited later.
 #
 # A field is sourced or absent. Base likelihood and severity are deliberately not
-# carried: no source in this corpus states them, and the only material that did
-# described them as heuristic constants that were never empirically calibrated, so
-# carrying them would import a number nobody can defend. That is the reason, not an
+# carried: no source in this corpus states them. That is the reason, not an
 # absence of sources.
 #
 # `runtime_signal` answers exactly one question, and all 27 records were re-derived

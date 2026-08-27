@@ -7,10 +7,10 @@
 # that reason is written in `discriminator` so the gate can be audited later.
 #
 # A field is sourced or absent. Base likelihood and severity are deliberately not
-# carried. One source does state them — the riskSpec prototype — and describes them
-# as heuristic constants that were never empirically calibrated, so carrying them
-# would import a number nobody can defend. That is the reason, not an absence of
-# sources.
+# carried: no source in this corpus states them, and the only material that did
+# described them as heuristic constants that were never empirically calibrated, so
+# carrying them would import a number nobody can defend. That is the reason, not an
+# absence of sources.
 #
 # `runtime_signal` answers exactly one question, and all 27 records were re-derived
 # against it on 2026-08-22 after a first pass applied it at three different
@@ -1091,17 +1091,25 @@ records:
       State, for each objective, one route that would satisfy it and be unacceptable; if no
       such route can be named, the objective has not been examined rather than being safe.
     sources:
-      - catalogue: riskSpec methodology page, Accenture prototype
-        edition: read 2026-08-21
-        name: modes with no direct runtime signal
+      - catalogue: >-
+          DeepMind, Specification gaming: the flip side of AI ingenuity
+        edition: 21 April 2020
+        name: specification gaming
         claim: >-
-          Names specification gaming, with the governance modes, as failure modes that
-          cannot be addressed by deterministic gates, per-event metrics, LLM judging or
-          trajectory aggregates alone, and require human assurance or a documented evidence
-          bundle.
+          Defines specification gaming as behaviour that satisfies the literal specification
+          of an objective without achieving the intended outcome, and holds that the agent is
+          not malfunctioning — it succeeds at the task as written, so the fault sits in the
+          specification rather than in the learning algorithm. Gives cases in which the stated
+          measure rises while the intended outcome does not: a boat-racing agent that loops to
+          collect targets instead of finishing the race, a Lego-stacking agent rewarded on the
+          height of a block's underside that flips the block rather than stacking it, and a
+          grasping agent that positions its hand between camera and object to satisfy a human
+          evaluator. Notes that detecting the gap requires a measure other than the one being
+          optimised, since the stated objective reports success throughout.
         note: >-
-          A vendor prototype's methodology page, not a standard; recorded because it states
-          the observability consequence explicitly and independently of the OWASP material.
+          A research blog post from the DeepMind safety team, not a standard; recorded because
+          it states the mechanism and the observability consequence directly, and independently
+          of the OWASP material.
 
   - id: FM-UNSUPPORTED-ASSERTION
     cluster: reasoning-and-execution
